@@ -4,12 +4,14 @@ from multiprocessing import Manager
 import click
 import warnings
 from tqdm import tqdm
+import json
 import os
 from nesymres.dataset import generator
-import numexpr
 import time
 import signal
 from nesymres import utils, dclasses
+from pathlib import Path
+import pickle
 
 def handler(signum, frame):
     raise TimeoutError
@@ -56,12 +58,12 @@ class Pipepile:
             if time.time() - s > 0.02:
                 signal.alarm(0)
                 return ["Too much time", i]
-            a = lambdify(
+            eq = lambdify(
                 "x,y,z" + "," + ",".join(consts),
                 constants_expression,
                 modules=["numpy"],
             )
-
+            res = dclasses.Equation(code=eq.__code__,)
             res = [a.__code__, str(expression), format_string, sy, i]
             signal.alarm(0)
         except:
@@ -73,19 +75,15 @@ class Pipepile:
 @click.command()
 @click.option(
     "--number_of_equations",
-    default=5000000,
+    default=1000,
     help="Total number of equations to generate",
 )
-@click.option("--multi/--no-multi", default=True)
-@click.option("--debug/--no-debug", default=False)
+@click.option("--debug/--no-debug", default=True)
 def creator(number_of_equations, debug):
     total_number = number_of_equations
     warnings.filterwarnings("error")
-    with open("config.json") as f:
-        d = json.load(f)
-        env = utils.create_env(d)
-
-    env_pip = pipeline.Pipepile(env)
+    env, config_dict = utils.create_env("config.json")
+    env_pip = Pipepile(env)
     starttime = time.time()
     func = []
     res = []
@@ -150,14 +148,16 @@ def creator(number_of_equations, debug):
         "Symbol": fin_syy,
         "Funcs": fin_funcs,
         "Return": fin_return_home,
-        "Config": d,
+        "Config": config_dict,
     }
     if not debug:
-        folder = "data/facebook/"
+        folder_path = Path("data/datasets/")
     else:
-        folder = "data/facebook/debug"
+        folder_path = Path("data/datasets/")
+    folder_path.mkdir(parents=True,exist_ok=True)
+
     file_name = "{}K".format(int(number_of_equations / 1000))
-    path = os.path.join(folder, file_name)
+    path = os.path.join(folder_path, file_name)
     with open(path, "wb") as file:
         pickle.dump(d, file)
 

@@ -2,7 +2,9 @@ import marshal
 import copyreg
 import types
 import pickle
-
+import json
+from . import dclasses
+from .dataset import generator
 
 def code_unpickler(data):
     return marshal.loads(data)
@@ -18,7 +20,9 @@ def load_data(path_dataset):
         data = pickle.load(f)
     return data
 
-def create_env(d):
-    param = Params(**d)
-    env = generator.CharSPEnvironment(param)
-    return env
+def create_env(path):
+    with open(path) as f:
+        d = json.load(f)
+    param = dclasses.DatasetParams(**d)
+    env = generator.Generator(param)
+    return env, d

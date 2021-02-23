@@ -15,9 +15,6 @@ import itertools
 from collections import OrderedDict
 import numpy as np
 import numexpr as ne
-import torch
-from torch.utils.data.dataset import Dataset
-from torch.utils.data import DataLoader
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 from sympy.core.cache import clear_cache
@@ -26,9 +23,7 @@ from sympy.calculus.util import AccumBounds
 from sympy.core.rules import Transform
 from sympy import sympify, Symbol
 from sympy import Float
-from .utils import bool_flag
 from random import random
-from .utils import timeout, TimeoutError
 from .sympy_utils import (
     remove_root_constant_terms,
     reduce_coefficients,
@@ -167,17 +162,13 @@ class Generator(object):
     }
 
     def __init__(self, params):
-        self.max_int = params.max_int
         self.max_ops = params.max_ops
-        self.max_ops_G = params.max_ops_G
         self.int_base = params.int_base
-        self.positive = params.positive
         self.precision = params.precision
-        self.n_variables = params.n_variables
+        self.variables = params.variables
         self.n_coefficients = params.n_coefficients
         self.max_len = params.max_len
-        self.clean_prefix_expr = params.clean_prefix_expr
-        assert self.max_int >= 1
+        #assert self.max_int >= 1
         assert abs(self.int_base) >= 2
         assert self.precision >= 2
 
@@ -189,8 +180,6 @@ class Generator(object):
         self.all_ops = [o for o, _ in ops]
         self.una_ops = [o for o, _ in ops if self.OPERATORS[o] == 1]
         self.bin_ops = [o for o, _ in ops if self.OPERATORS[o] == 2]
-        logger.info(f"Unary operators: {self.una_ops}")
-        logger.info(f"Binary operators: {self.bin_ops}")
         self.all_ops_probs = np.array([float(w) for _, w in ops]).astype(np.float64)
         self.una_ops_probs = np.array(
             [float(w) for o, w in ops if self.OPERATORS[o] == 1]
@@ -221,14 +210,7 @@ class Generator(object):
         #'t': sp.Symbol('t', real=True, nonzero=True),  # , positive=True
         # })
         self.coefficients = OrderedDict({})
-        #     f'a{i}': sp.Symbol(f'a{i}', real=True)
-        #     for i in range(10)
-        # })
-        # self.functions = OrderedDict({
-        #     'f': sp.Function('f', real=True, nonzero=True),
-        #     'g': sp.Function('g', real=True, nonzero=True),
-        #     'h': sp.Function('h', real=True, nonzero=True),
-        # })
+
         self.symbols = [
             "I",
             "INT+",
@@ -248,7 +230,7 @@ class Generator(object):
         #     self.elements = [str(i) for i in range(max_digit - abs(self.int_base), max_digit)]
         # else:
         #     self.elements = [str(i) for i in range(-5,abs(self.int_base))]
-        assert 1 <= self.n_variables <= len(self.variables)
+        assert 1 <= len(self.variables)
         # assert 0 <= self.n_coefficients <= len(self.coefficients)
         # assert all(k in self.OPERATORS for k in self.functions.keys())
         assert all(v in self.OPERATORS for v in self.SYMPY_OPERATORS.values())
@@ -289,9 +271,7 @@ class Generator(object):
 
         # number of words / indices
         self.n_words = params.n_words = len(self.words)
-        # self.eos_index = params.eos_index = 0
-        # self.pad_index = params.pad_index = 1
-        logger.info(f"words: {self.word2id}")
+
 
         # leaf probabilities
         s = [float(x) for x in params.leaf_probs.split(",")]
@@ -302,12 +282,11 @@ class Generator(object):
         assert (self.leaf_probs[1] == 0) == (self.n_coefficients == 0)
 
         # possible leaves
-        self.n_leaves = self.n_variables + self.n_coefficients
+        self.n_leaves = len(self.variables) + self.n_coefficients
         if self.leaf_probs[2] > 0:
-            self.n_leaves += self.max_int * (1 if self.positive else 2)
+            self.n_leaves += 2 #-1, 1
         if self.leaf_probs[3] > 0:
             self.n_leaves += len(self.constants)
-        logger.info(f"{self.n_leaves} possible leaves.")
 
         # generation parameters
         self.nl = 1  # self.n_leaves
@@ -327,28 +306,6 @@ class Generator(object):
             x in ["expand", "factor", "expand_log", "logcombine", "powsimp", "simplify"]
             for x in self.rewrite_functions
         )
-
-        # valid check
-        logger.info(f"Checking expressions in {str(EVAL_VALUES)}")
-
-    def batch_sequences(self, sequences):
-        """
-        Take as input a list of n sequences (torch.LongTensor vectors) and return
-        a tensor of size (slen, n) where slen is the length of the longest
-        sentence, and a vector lengths containing the length of each sentence.
-        """
-        lengths = torch.LongTensor([len(s) + 2 for s in sequences])
-        sent = torch.LongTensor(lengths.max().item(), lengths.size(0)).fill_(
-            self.pad_index
-        )
-        assert lengths.min().item() > 2
-
-        sent[0] = self.eos_index
-        for i, s in enumerate(sequences):
-            sent[1 : lengths[i] - 1, i].copy_(s)
-            sent[lengths[i] - 1, i] = self.eos_index
-
-        return sent, lengths
 
     def generate_bin_dist(self, max_ops):
         """
@@ -1005,60 +962,6 @@ class Generator(object):
 
         return f_prefix, f
 
-    def create_train_iterator(self, task, params, data_path):
-        """
-        Create a dataset for this environment.
-        """
-        logger.info(f"Creating train iterator for {task} ...")
-
-        dataset = EnvDataset(
-            self,
-            task,
-            train=True,
-            rng=None,
-            params=params,
-            path=(None if data_path is None else data_path[task][0]),
-        )
-        return DataLoader(
-            dataset,
-            timeout=(0 if params.num_workers == 0 else 1800),
-            batch_size=params.batch_size,
-            num_workers=(
-                params.num_workers
-                if data_path is None or params.num_workers == 0
-                else 1
-            ),
-            shuffle=False,
-            collate_fn=dataset.collate_fn,
-        )
-
-    def create_test_iterator(self, data_type, task, params, data_path):
-        """
-        Create a dataset for this environment.
-        """
-        assert data_type in ["valid", "test"]
-        logger.info(f"Creating {data_type} iterator for {task} ...")
-
-        dataset = EnvDataset(
-            self,
-            task,
-            train=False,
-            rng=np.random.RandomState(0),
-            params=params,
-            path=(
-                None
-                if data_path is None
-                else data_path[task][1 if data_type == "valid" else 2]
-            ),
-        )
-        return DataLoader(
-            dataset,
-            timeout=0,
-            batch_size=params.batch_size,
-            num_workers=1,
-            shuffle=False,
-            collate_fn=dataset.collate_fn,
-        )
 
     def constants_to_placeholder(self, s):
         try:
