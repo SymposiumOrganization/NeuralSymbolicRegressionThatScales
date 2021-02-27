@@ -42,51 +42,6 @@ CLEAR_SYMPY_CACHE_FREQ = 10000
 
 
 
-
-class ValueErrorExpression(Exception):
-    pass
-
-
-class UnknownSymPyOperator(Exception):
-    pass
-
-
-class InvalidPrefixExpression(Exception):
-    def __init__(self, data):
-        self.data = data
-
-    def __str__(self):
-        return repr(self.data)
-
-
-def is_valid_expr(s):
-    """
-    Check that we are able to evaluate an expression (and that it will not blow in SymPy evaluation).
-    """
-    s = s.replace("Derivative(f(x),x)", "1")
-    s = s.replace("Derivative(1,x)", "1")
-    s = s.replace("(E)", "(exp(1))")
-    s = s.replace("(I)", "(1)")
-    s = s.replace("(pi)", "(1)")
-    s = re.sub(
-        r"(?<![a-z])(f|g|h|Abs|sign|ln|sin|cos|tan|sec|csc|cot|asin|acos|atan|asec|acsc|acot|tanh|sech|csch|coth|asinh|acosh|atanh|asech|acoth|acsch)\(",
-        "(",
-        s,
-    )
-    count = count_nested_exp(s)
-    if count >= 4:
-        return False
-    for v in EVAL_VALUES:
-        try:
-            local_dict = {s: (v + 1e-4 * i) for i, s in enumerate(EVAL_SYMBOLS)}
-            value = ne.evaluate(s, local_dict=local_dict).item()
-            if not (math.isnan(value) or math.isinf(value)):
-                return True
-        except (FloatingPointError, ZeroDivisionError, TypeError, MemoryError):
-            continue
-    return False
-
-
 def eval_test_zero(eq):
     """
     Evaluate an equation by replacing all its free symbols with random values.
@@ -134,7 +89,6 @@ class Generator(object):
         "mul": 2,
         "div": 2,
         "pow": 2,
-        #'rac': 2,
         "inv": 1,
         "pow2": 1,
         "pow3": 1,
@@ -165,9 +119,9 @@ class Generator(object):
         self.max_ops = params.max_ops
         self.int_base = params.int_base
         self.precision = params.precision
-        self.variables = params.variables
         self.n_coefficients = params.n_coefficients
         self.max_len = params.max_len
+        self.positive = params.positive
         #assert self.max_int >= 1
         assert abs(self.int_base) >= 2
         assert self.precision >= 2
@@ -197,33 +151,26 @@ class Generator(object):
 
         # symbols / elements
         self.constants = ["pi", "E"]
-        self.variables = OrderedDict(
-            {
-                "x": sp.Symbol("x", real=True, nonzero=True),  # , positive=True
-                "y": sp.Symbol("y", real=True, nonzero=True),  # , positive=True
-                "z": sp.Symbol("z", real=True, nonzero=True),
-                "c": sp.Symbol("c", real=True, nonzero=True),
-            }
-        )
-        # , positive=True
-        #'p': sp.Symbol('p', real=True, nonzero=True),  # , positive=True
-        #'t': sp.Symbol('t', real=True, nonzero=True),  # , positive=True
-        # })
-        self.coefficients = OrderedDict({})
+        self.variables = OrderedDict({})
+        for var in params.variables: 
+            self.variables[str(var)] =sp.Symbol(str(var), real=True, nonzero=True)
+        self.placeholders = {}
+        self.placeholders["cm"] = sp.Symbol("cm", real=True, nonzero=True)
+        self.placeholders["ca"] = sp.Symbol("ca",real=True, nonzero=True)
 
-        self.symbols = [
-            "I",
-            "INT+",
-            "INT-",
-            "INT",
-            "FLOAT",
-            "-",
-            ".",
-            "10^",
-            "Y",
-            "Y'",
-            "Y''",
-        ]
+        # self.symbols = [
+        #     "I",
+        #     "INT+",
+        #     "INT-",
+        #     "INT",
+        #     "FLOAT",
+        #     "-",
+        #     ".",
+        #     "10^",
+        #     "Y",
+        #     "Y'",
+        #     "Y''",
+        # ]
         # if self.balanced:
         #     assert self.int_base > 2
         #     max_digit = (self.int_base + 1) // 2
@@ -257,8 +204,8 @@ class Generator(object):
             ]
             + digits
         )  # + self.elements
-        # import pdb
-        # pdb.set_trace()
+
+
         self.id2word = {i: s for i, s in enumerate(self.words, 3)}
         self.word2id = {s: i for i, s in self.id2word.items()}
         # ADD Start and Finish
@@ -373,15 +320,15 @@ class Generator(object):
         In balanced bases (positive), digits range from -(base-1)//2 to (base-1)//2
         """
         base = self.int_base
-        balanced = self.balanced
+        #balanced = self.balanced
         res = []
         max_digit = abs(base)
-        if balanced:
-            max_digit = (base - 1) // 2
-        else:
-            if base > 0:
-                neg = val < 0
-                val = -val if neg else val
+        # if balanced:
+        #     max_digit = (base - 1) // 2
+        # else:
+        if base > 0:
+            neg = val < 0
+            val = -val if neg else val
         while True:
             rem = val % base
             val = val // base
@@ -391,10 +338,10 @@ class Generator(object):
             res.append(str(rem))
             if val == 0:
                 break
-        if base < 0 or balanced:
-            res.append("INT")
-        else:
-            res.append("INT-" if neg else "INT+")
+        # if base < 0 or balanced:
+        #     res.append("INT")
+        # else:
+        #     res.append("INT-" if neg else "INT+")
         return res[::-1]
 
     def parse_int(self, lst):
@@ -403,17 +350,17 @@ class Generator(object):
         Return the integer value, and the position it ends in the list.
         """
         base = self.int_base
-        balanced = self.balanced
+        # balanced = self.balanced
         val = 0
-        if not (
-            balanced
-            and lst[0] == "INT"
-            or base >= 2
-            and lst[0] in ["INT+", "INT-"]
-            or base <= -2
-            and lst[0] == "INT"
-        ):
-            raise InvalidPrefixExpression(f"Invalid integer in prefix expression")
+        # if not (
+        #     balanced
+        #     and lst[0] == "INT"
+        #     or base >= 2
+        #     and lst[0] in ["INT+", "INT-"]
+        #     or base <= -2
+        #     and lst[0] == "INT"
+        # ):
+        #     raise InvalidPrefixExpression(f"Invalid integer in prefix expression")
         i = 0
         for x in lst[1:]:
             if not (x.isdigit() or x[0] == "-" and x[1:].isdigit()):
@@ -454,11 +401,9 @@ class Generator(object):
         self.leaf_probs
         leaf_type = rng.choice(4, p=self.leaf_probs)
         if leaf_type == 0:
-            return [list(self.variables.keys())[rng.randint(self.n_variables)]]
-        elif leaf_type == 1:
-            return [list(self.coefficients.keys())[rng.randint(self.n_coefficients)]]
+            return [list(self.variables.keys())[rng.randint(len(self.variables))]]
         elif leaf_type == 2:
-            c = rng.randint(1, max_int + 1)
+            c = 1
             c = c if (self.positive or rng.randint(2) == 0) else -c
             return self.write_int(c)
         else:
@@ -467,8 +412,8 @@ class Generator(object):
     def _generate_expr(
         self,
         nb_total_ops,
-        max_int,
         rng,
+        max_int = 1,
         require_x=False,
         require_y=False,
         require_z=False,
@@ -798,9 +743,7 @@ class Generator(object):
         """
         Convert an infix expression to SymPy.
         """
-        if check_if_valid:
-            if not is_valid_expr(infix):
-                raise ValueErrorExpression
+
         expr = parse_expr(infix, evaluate=True, local_dict=self.local_dict)
         if expr.has(sp.I) or expr.has(AccumBounds):
             raise ValueErrorExpression
@@ -913,9 +856,20 @@ class Generator(object):
 
     def process_equation(self, infix, check_if_valid=True):
         f = self.infix_to_sympy(infix, check_if_valid=check_if_valid)
-        # skip constant expressions
-        if self.variables["x"] not in f.free_symbols:
+
+        var_symbols = list(self.variables)
+        pos_dict = {x:idx for x, idx in enumerate(var_symbols)}
+        # skip constant expressions or that have a variable without having the one before
+        if self.variables[var_symbols[0]] not in f.free_symbols:
             return None, "X not in free symbols"
+
+        #skip expression that miss a to do variable
+        for i in f.free_symbols:
+            if len(set(var_symbols[:])) & len(set(f.free_symbols)) != len(var_symbols[:k]):
+                return None, f"Variable {i} but not the one before"
+            
+
+
         # remove additive constant, re-index coefficients
         # if rng.randint(2) == 0:
         f = extract_non_constant_subtree(f, list(self.variables.values()))
@@ -936,17 +890,8 @@ class Generator(object):
         Generate pairs of (function, primitive).
         Start by generating a random function f, and use SymPy to compute F.
         """
-        x = self.variables["x"]
-        if rng.randint(40) == 0:
-            nb_ops = rng.randint(0, 3)
-        else:
-            nb_ops = rng.randint(3, self.max_ops + 1)
-
-
-        # try:
-        # generate an expression and rewrite it,
-        # avoid issues in 0 and convert to SymPy
-        f_expr = self._generate_expr(nb_ops, self.max_int, rng)
+        nb_ops = rng.randint(3, self.max_ops + 1)
+        f_expr = self._generate_expr(nb_ops, rng, max_int=1)
 
         infix = self.prefix_to_infix(f_expr)
         f = self.process_equation(infix)

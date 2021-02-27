@@ -17,10 +17,11 @@ def handler(signum, frame):
     raise TimeoutError
 
 class Pipepile:
-    def __init__(self, env: generator.Generator):
+    def __init__(self, env: generator.Generator, is_timer=False):
         self.env = env
         manager = Manager()
         self.cnt = manager.list()
+        self.is_timer = is_timer
 
     def return_training_set(self, i):
         np.random.seed(i)
@@ -34,8 +35,9 @@ class Pipepile:
         return ["Loop terminated", i]
 
     def create_lambda(self, i):
-        signal.signal(signal.SIGALRM, handler)
-        signal.alarm(1)
+        if self.is_timer:
+            signal.signal(signal.SIGALRM, handler)
+            signal.alarm(1)
         try:
             prefix_not, expression = self.env.generate_equation(np.random)
             if expression == "0" or type(expression) == str:
@@ -66,7 +68,7 @@ class Pipepile:
             res = dclasses.Equation(code=eq.__code__,)
             res = [a.__code__, str(expression), format_string, sy, i]
             signal.alarm(0)
-        except:
+        except TimeoutError:
             res = ["TimeOut Error", i]
             signal.alarm(0)
         return res
@@ -83,12 +85,12 @@ def creator(number_of_equations, debug):
     total_number = number_of_equations
     warnings.filterwarnings("error")
     env, config_dict = utils.create_env("config.json")
-    env_pip = Pipepile(env)
+    env_pip = Pipepile(env, is_timer=not debug)
     starttime = time.time()
     func = []
     res = []
     counter = []
-    if debug:
+    if not debug:
         try:
             with Pool(multiprocessing.cpu_count()) as p:
                 max_ = total_number
@@ -102,7 +104,7 @@ def creator(number_of_equations, debug):
             pass
 
     else:
-        res = map(env_pip.return_validation_set, tqdm(range(0, total_number)))
+        res = map(env_pip.return_training_set, tqdm(range(0, total_number)))
 
     funcs = [l[0] for l in res if len(l) > 2]
     no_c = [l[1] for l in res if len(l) > 2]

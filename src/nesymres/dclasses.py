@@ -18,12 +18,8 @@ class Dataset:
 
 @dataclass
 class DatasetParams:
-    env_base_seed: int
     max_len: int
-    same_nb_ops_per_batch: str
-    export_data: str
-    reload_data: str
-    reload_size: int
+    positive: bool
     env_name: str
     operators: str
     max_ops: int
