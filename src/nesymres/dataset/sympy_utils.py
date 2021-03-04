@@ -212,27 +212,40 @@ def check_additive_constants(expr, variables):
             return False
 
 
-# def extract_non_constant_subtree_break(expr, variables):
-#     """
-#     Extract a non-constant sub-tree from an equation.
-#     """
-#     last = expr
-#     while True:
-#         last = expr
-#         expr = remove_root_constant_terms_t(expr, variables, "add")
-#         # expr = remove_root_constant_terms(expr, variables, "mul")
-#         # expr = remove_root_constant_terms(expr2, variables, 'pow')
-#         n_arg = len(expr.args)
-#         for i in range(n_arg):
-#             # if len(expr.args) == 1:
-#             #      #breakpoint()
-#             try:
-#                 expr = expr.subs(expr.args[i],extract_non_constant_subtree_break(expr.args[i], variables))
-#             except:
-#                 breakpoint()
-#         if str(expr) == str(last):
-#             return expr
+def add_multiplicative_constants(expr, multiplicative_placeholder, unary_operators=[]):
+    """
+    Traverse the tree in post-order fashion and add multiplicative placeholders
+    """
 
+    begin = expr
+
+    if not expr.args:
+        if type(expr) == sp.core.numbers.NegativeOne:
+            return expr
+        else:
+            return multiplicative_placeholder * expr
+    for sub_expr in expr.args:
+        expr = expr.subs(sub_expr,add_multiplicative_constants(sub_expr, multiplicative_placeholder, unary_operators=unary_operators))
+    
+    if str(type(expr)) in unary_operators:
+        expr = multiplicative_placeholder * expr
+    return expr
+
+
+def add_additive_constants(expr, placeholders, unary_operators=[]):
+    begin = expr
+    if not expr.args:
+        if type(expr) == sp.core.numbers.NegativeOne or str(expr) == str(placeholders["cm"]):
+            return expr
+        else:
+            return placeholders["ca"] + expr
+    for sub_expr in expr.args:
+        expr = expr.subs(sub_expr,add_additive_constants(sub_expr, placeholders, unary_operators=unary_operators))
+    
+    if str(type(expr)) in unary_operators:
+        expr = placeholders["ca"] + expr
+    
+    return expr
 
 def reindex_coefficients(expr, coefficients):
     """

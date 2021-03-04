@@ -18,7 +18,6 @@ import numexpr as ne
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 from sympy.core.cache import clear_cache
-from sympy.integrals.risch import NonElementaryIntegral
 from sympy.calculus.util import AccumBounds
 from sympy.core.rules import Transform
 from sympy import sympify, Symbol
@@ -28,15 +27,16 @@ from .sympy_utils import (
     remove_root_constant_terms,
     reduce_coefficients,
     reindex_coefficients,
+    add_multiplicative_constants,
+    add_additive_constants
 )
 from .sympy_utils import (
     extract_non_constant_subtree,
     simplify_const_with_coeff,
-    simplify_equa_diff,
     clean_degree2_solution,
 )
 from .sympy_utils import remove_mul_const, has_inf_nan, has_I, simplify
-
+from collections import Counter
 
 CLEAR_SYMPY_CACHE_FREQ = 10000
 
@@ -117,14 +117,9 @@ class Generator(object):
 
     def __init__(self, params):
         self.max_ops = params.max_ops
-        self.int_base = params.int_base
-        self.precision = params.precision
-        self.n_coefficients = params.n_coefficients
         self.max_len = params.max_len
         self.positive = params.positive
-        #assert self.max_int >= 1
-        assert abs(self.int_base) >= 2
-        assert self.precision >= 2
+
 
         # parse operators with their weights
         self.operators = sorted(list(self.OPERATORS.keys()))
@@ -154,29 +149,13 @@ class Generator(object):
         self.variables = OrderedDict({})
         for var in params.variables: 
             self.variables[str(var)] =sp.Symbol(str(var), real=True, nonzero=True)
+        self.var_symbols = list(self.variables)
+        self.pos_dict = {x:idx for idx, x in enumerate(self.var_symbols)}        
+        
+
         self.placeholders = {}
         self.placeholders["cm"] = sp.Symbol("cm", real=True, nonzero=True)
         self.placeholders["ca"] = sp.Symbol("ca",real=True, nonzero=True)
-
-        # self.symbols = [
-        #     "I",
-        #     "INT+",
-        #     "INT-",
-        #     "INT",
-        #     "FLOAT",
-        #     "-",
-        #     ".",
-        #     "10^",
-        #     "Y",
-        #     "Y'",
-        #     "Y''",
-        # ]
-        # if self.balanced:
-        #     assert self.int_base > 2
-        #     max_digit = (self.int_base + 1) // 2
-        #     self.elements = [str(i) for i in range(max_digit - abs(self.int_base), max_digit)]
-        # else:
-        #     self.elements = [str(i) for i in range(-5,abs(self.int_base))]
         assert 1 <= len(self.variables)
         # assert 0 <= self.n_coefficients <= len(self.coefficients)
         # assert all(k in self.OPERATORS for k in self.functions.keys())
@@ -221,19 +200,17 @@ class Generator(object):
 
 
         # leaf probabilities
-        s = [float(x) for x in params.leaf_probs.split(",")]
-        assert len(s) == 4 and all(x >= 0 for x in s)
-        self.leaf_probs = np.array(s).astype(np.float64)
-        self.leaf_probs = self.leaf_probs / self.leaf_probs.sum()
-        assert self.leaf_probs[0] > 0
-        assert (self.leaf_probs[1] == 0) == (self.n_coefficients == 0)
+        # self.leaf_probs = np.array(s).astype(np.float64)
+        # self.leaf_probs = self.leaf_probs / self.leaf_probs.sum()
+        # assert self.leaf_probs[0] > 0
+        # assert (self.leaf_probs[1] == 0) == (self.n_coefficients == 0)
 
         # possible leaves
-        self.n_leaves = len(self.variables) + self.n_coefficients
-        if self.leaf_probs[2] > 0:
-            self.n_leaves += 2 #-1, 1
-        if self.leaf_probs[3] > 0:
-            self.n_leaves += len(self.constants)
+        # self.n_leaves = len(self.variables) + self.n_coefficients
+        # if self.leaf_probs[2] > 0:
+        #     self.n_leaves += 2 #-1, 1
+        # if self.leaf_probs[3] > 0:
+        #     self.n_leaves += len(self.constants)
 
         # generation parameters
         self.nl = 1  # self.n_leaves
@@ -313,37 +290,6 @@ class Generator(object):
         ]
         return D
 
-    def write_int(self, val):
-        """
-        Convert a decimal integer to a representation in the given base.
-        The base can be negative.
-        In balanced bases (positive), digits range from -(base-1)//2 to (base-1)//2
-        """
-        base = self.int_base
-        #balanced = self.balanced
-        res = []
-        max_digit = abs(base)
-        # if balanced:
-        #     max_digit = (base - 1) // 2
-        # else:
-        if base > 0:
-            neg = val < 0
-            val = -val if neg else val
-        while True:
-            rem = val % base
-            val = val // base
-            if rem < 0 or rem > max_digit:
-                rem -= base
-                val += 1
-            res.append(str(rem))
-            if val == 0:
-                break
-        # if base < 0 or balanced:
-        #     res.append("INT")
-        # else:
-        #     res.append("INT-" if neg else "INT+")
-        return res[::-1]
-
     def parse_int(self, lst):
         """
         Parse a list that starts with an integer.
@@ -352,15 +298,6 @@ class Generator(object):
         base = self.int_base
         # balanced = self.balanced
         val = 0
-        # if not (
-        #     balanced
-        #     and lst[0] == "INT"
-        #     or base >= 2
-        #     and lst[0] in ["INT+", "INT-"]
-        #     or base <= -2
-        #     and lst[0] == "INT"
-        # ):
-        #     raise InvalidPrefixExpression(f"Invalid integer in prefix expression")
         i = 0
         for x in lst[1:]:
             if not (x.isdigit() or x[0] == "-" and x[1:].isdigit()):
@@ -394,20 +331,26 @@ class Generator(object):
         e = e % nb_empty
         return e, arity
 
-    def get_leaf(self, max_int, rng):
-        """
-        Generate a leaf.
-        """
-        self.leaf_probs
-        leaf_type = rng.choice(4, p=self.leaf_probs)
-        if leaf_type == 0:
-            return [list(self.variables.keys())[rng.randint(len(self.variables))]]
-        elif leaf_type == 2:
-            c = 1
-            c = c if (self.positive or rng.randint(2) == 0) else -c
-            return self.write_int(c)
+    def get_leaf(self, curr_leaves, rng):
+        if curr_leaves:
+            max_idxs = max([self.pos_dict[x] for x in curr_leaves]) + 1
         else:
-            return [self.constants[rng.randint(len(self.constants))]]
+            max_idxs = 0
+        return [list(self.variables.keys())[rng.randint(low=0,high=max_idxs+1)]]
+
+    # def get_leaf(self, max_int, rng):
+    #     """
+    #     Generate a leaf.
+    #     """
+    #     leaf_type = rng.choice(4, p=self.leaf_probs)
+    #     if leaf_type == 0:
+    #         return [list(self.variables.keys())[rng.randint(len(self.variables))]]
+    #     elif leaf_type == 2:
+    #         c = 1
+    #         c = c if (self.positive or rng.randint(2) == 0) else -c
+    #         return self.write_int(c)
+    #     else:
+    #         return [self.constants[rng.randint(len(self.constants))]]
 
     def _generate_expr(
         self,
@@ -457,23 +400,27 @@ class Generator(object):
 
         # create leaves
         # optionally add variables x, y, z if possible
-        assert not require_z or require_y
-        assert not require_y or require_x
-        leaves = [self.get_leaf(max_int, rng) for _ in range(t_leaves)]
-        if require_z and t_leaves >= 2:
-            leaves[1] = ["z"]
-        if require_y:
-            leaves[0] = ["y"]
-        if require_x and not any(len(leaf) == 1 and leaf[0] == "x" for leaf in leaves):
-            leaves[-1] = ["x"]
-        rng.shuffle(leaves)
+        # assert not require_z or require_y
+        # assert not require_y or require_x
+        leaves = []
+        curr_leaves = set()
+        for _ in range(t_leaves):
+            new_element = self.get_leaf(curr_leaves, rng)
+            leaves.append(new_element)
+            curr_leaves.add(*new_element)
+        # if require_z and t_leaves >= 2:
+        #     leaves[1] = ["z"]
+        # if require_y:
+        #     leaves[0] = ["y"]
+        # if require_x and not any(len(leaf) == 1 and leaf[0] == "x" for leaf in leaves):
+        #     leaves[-1] = ["x"]
+        # rng.shuffle(leaves)
 
         # insert leaves into tree
         for pos in range(len(stack) - 1, -1, -1):
             if stack[pos] is None:
                 stack = stack[:pos] + leaves.pop() + stack[pos + 1 :]
         assert len(leaves) == 0
-
         return stack
         
     def add_contants(self,pred_str):
@@ -596,35 +543,50 @@ class Generator(object):
             f"Unknown token in prefix expression: {token}, with arguments {args}"
         )
 
-    def _prefix_to_infix_with_constants(self, expr, is_const=1):
-        """
-        Return string with constants
-        """
-        if not expr or len(expr) == 0:
-            raise InvalidPrefixExpression("Empty prefix list.")
-        t = expr[0]
-        if t in self.operators:
-            args = []
-            l1 = expr[1:]
-            for i in range(self.OPERATORS[t]):
-                i1, l1 = self._prefix_to_infix_with_constants(
-                    l1, is_const and not (t == "pow" and i > 0)
-                )
-                args.append(i1)
-            if self.OPERATORS[t] == 1:
-                return ["", "{}*"][is_const] + self.write_infix(t, args), l1
-            else:
-                return self.write_infix(t, args), l1
-        elif t in self.variables:
-            return ["", "{}*"][is_const] + t, expr[1:]
-        elif t in self.coefficients or t in self.constants or t == "I":
-            return t, expr[1:]
-        else:
-            val = int(expr[0])
-            # sign = lambda x: (1, -1)[x < 0]
-            return [val, self.sign(val) + "{}"][is_const], expr[1:]
-            # val, i = self.parse_int(expr)
-            # return str(val), expr[i:]
+    # def _prefix_to_infix_with_constants(self, expr, is_const=1):
+    #     """
+    #     Return string with constants
+    #     """
+    #     if not expr or len(expr) == 0:
+    #         raise InvalidPrefixExpression("Empty prefix list.")
+    #     t = expr[0]
+    #     if t in self.operators:
+    #         args = []
+    #         l1 = expr[1:]
+    #         for i in range(self.OPERATORS[t]):
+    #             i1, l1 = self._prefix_to_infix_with_constants(
+    #                 l1, is_const and not (t == "pow" and i > 0)
+    #             )
+    #             args.append(i1)
+    #         if self.OPERATORS[t] == 1:
+    #             return ["", "{}*"][is_const] + self.write_infix(t, args), l1
+    #         else:
+    #             return self.write_infix(t, args), l1
+    #     elif t in self.variables:
+    #         return ["", "{}*"][is_const] + t, expr[1:]
+    #     elif t in self.coefficients or t in self.constants or t == "I":
+    #         return t, expr[1:]
+    #     else:
+    #         val = int(expr[0])
+    #         # sign = lambda x: (1, -1)[x < 0]
+    #         return [val, self.sign(val) + "{}"][is_const], expr[1:]
+    #         # val, i = self.parse_int(expr)
+    #         # return str(val), expr[i:]
+
+    def unique_constansts(self,expr_list):
+        curr = Counter()
+        curr["cm"] = 0
+        curr["ca"] = 0
+        for i in range(len(expr_list)):
+            if expr_list[i] == "cm":
+                expr_list[i] = "cm_{}".format(curr["cm"])
+                curr["cm"] += 1
+            if expr_list[i] == "ca":
+                expr_list[i] = "ca{}".format(curr["ca"])
+                curr["ca"] += 1
+        return curr
+            
+
 
     def sign(self, x):
         return ("", "-")[x < 0]
@@ -857,31 +819,29 @@ class Generator(object):
     def process_equation(self, infix, check_if_valid=True):
         f = self.infix_to_sympy(infix, check_if_valid=check_if_valid)
 
-        var_symbols = list(self.variables)
-        pos_dict = {x:idx for x, idx in enumerate(var_symbols)}
-        # skip constant expressions or that have a variable without having the one before
-        if self.variables[var_symbols[0]] not in f.free_symbols:
-            return None, "X not in free symbols"
-
-        #skip expression that miss a to do variable
-        for i in f.free_symbols:
-            if len(set(var_symbols[:])) & len(set(f.free_symbols)) != len(var_symbols[:k]):
-                return None, f"Variable {i} but not the one before"
-            
-
-
+        
+        symbols = set([str(x) for x in f.free_symbols])
+        if not symbols:
+            return None, f"No variables in the expression, skip"
+        for s in symbols:
+            if not len(set(self.var_symbols[:self.pos_dict[s]]) & symbols) == len(self.var_symbols[:self.pos_dict[s]]):
+                return None, f"Variable {s} in the expressions, but not the one before"
+        
+        f = remove_root_constant_terms(f, list(self.variables.values()), 'add')
+        f = remove_root_constant_terms(f, list(self.variables.values()), 'mul')
+        f = add_multiplicative_constants(f, self.placeholders["cm"], unary_operators=self.una_ops)
+        f = add_additive_constants(f, self.placeholders, unary_operators=self.una_ops)
         # remove additive constant, re-index coefficients
         # if rng.randint(2) == 0:
-        f = extract_non_constant_subtree(f, list(self.variables.values()))
-        # f = remove_root_constant_terms(f, list(self.variables.values()), 'add')
-        # f = remove_root_constant_terms(f, list(self.variables.values()), 'mul')
-        f = self.reduce_coefficients(f)
-        f = self.simplify_const_with_coeff(f)
-        f = self.reindex_coefficients(f)
+        # f = extract_non_constant_subtree(f, list(self.variables.values()))
+        
+        # f = self.reduce_coefficients(f)
+        # f = self.simplify_const_with_coeff(f)
+        # f = self.reindex_coefficients(f)
 
         # skip invalid expressions
-        if has_inf_nan(f):
-            return None, "There are nans"
+        # if has_inf_nan(f):
+        #     return None, "There are nans"
 
         return f
 

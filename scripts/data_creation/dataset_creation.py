@@ -39,21 +39,15 @@ class Pipepile:
             signal.signal(signal.SIGALRM, handler)
             signal.alarm(1)
         try:
-            prefix_not, expression = self.env.generate_equation(np.random)
-            if expression == "0" or type(expression) == str:
+            prefix, raw_expr = self.env.generate_equation(np.random)
+            if raw_expr == "0" or type(raw_expr) == str:
                 signal.alarm(0)
                 raise ArithmeticError
-
-            sy = expression.free_symbols
-            sy_str = {str(s) for s in sy}
-            if not frozenset(sy_str) in set(
-                [frozenset(self.env.variables[: idx + 1]) for idx in range(3)]
-            ):
-                signal.alarm(0)
-                return ["Variable order not consistent", i]
-
+            
+            sy = raw_expr.free_symbols
             sy = set(map(str, sy))
-            format_string, _ = self.env._prefix_to_infix_with_constants(prefix_not)
+            breakpoint()
+            prefix = self.env.unique_constansts(prefix)
             n_const = self.env.count_number_of_constants(format_string)
             consts = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10"]
             constants_expression = format_string.format(*tuple(consts[:n_const]))

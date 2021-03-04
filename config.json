@@ -7,15 +7,7 @@
     "int_base": 10,
     "precision": 10,
     "rewrite_functions": "",
-    "leaf_probs": "0.8,0,0.2,0",
     "variables": ["x_1","x_2","x_3","x_4","x_5","x_6"],
-    "n_coefficients": 0,
-    "beam_eval": false,
-    "beam_size": 1,
-    "beam_length_penalty": 1,
-    "beam_early_stopping": true,
-    "eval_only": false,
-    "n_words": 91,
     "eos_index": 1,
     "pad_index": 0
 }
