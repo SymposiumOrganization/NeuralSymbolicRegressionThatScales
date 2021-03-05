@@ -1,5 +1,3 @@
-# Copyright (c) 2020-present, Facebook, Inc.
-# All rights reserved.
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
@@ -157,22 +155,17 @@ class Generator(object):
         self.placeholders["cm"] = sp.Symbol("cm", real=True, nonzero=True)
         self.placeholders["ca"] = sp.Symbol("ca",real=True, nonzero=True)
         assert 1 <= len(self.variables)
-        # assert 0 <= self.n_coefficients <= len(self.coefficients)
-        # assert all(k in self.OPERATORS for k in self.functions.keys())
+        self.coefficients = [f"{x}_{i}" for x in self.placeholders.keys() for i in range(100)] # We do not no a priori how many coefficients an expression has, so we set to 100. 
         assert all(v in self.OPERATORS for v in self.SYMPY_OPERATORS.values())
 
         # SymPy elements
         self.local_dict = {}
         for k, v in list(
             self.variables.items()
-        ):  # + list(self.coefficients.items()): #+ list(self.functions.items()):
+        ):  
             assert k not in self.local_dict
             self.local_dict[k] = v
 
-        # vocabulary
-        # import pdb
-        # pdb.set_trace()
-        # self.words = self.constants + list(self.variables.keys()) + self.operators  + self.elements #list(self.coefficients.keys()) +SPECIAL_WORDS + self.constants + list(self.variables.keys()) + list(self.coefficients.keys()) + self.operators + self.symbols + self.elements
         digits = [str(i) for i in range(-3, abs(6))]
         self.words = (
             list(self.variables.keys())
@@ -290,23 +283,23 @@ class Generator(object):
         ]
         return D
 
-    def parse_int(self, lst):
-        """
-        Parse a list that starts with an integer.
-        Return the integer value, and the position it ends in the list.
-        """
-        base = self.int_base
-        # balanced = self.balanced
-        val = 0
-        i = 0
-        for x in lst[1:]:
-            if not (x.isdigit() or x[0] == "-" and x[1:].isdigit()):
-                break
-            val = val * base + int(x)
-            i += 1
-        if base > 0 and lst[0] == "INT-":
-            val = -val
-        return val, i + 1
+    # def parse_int(self, lst):
+    #     """
+    #     Parse a list that starts with an integer.
+    #     Return the integer value, and the position it ends in the list.
+    #     """
+    #     base = self.int_base
+    #     # balanced = self.balanced
+    #     val = 0
+    #     i = 0
+    #     for x in lst[1:]:
+    #         if not (x.isdigit() or x[0] == "-" and x[1:].isdigit()):
+    #             break
+    #         val = val * base + int(x)
+    #         i += 1
+    #     if base > 0 and lst[0] == "INT-":
+    #         val = -val
+    #     return val, i + 1
 
     def sample_next_pos_ubi(self, nb_empty, nb_ops, rng):
         """
@@ -423,27 +416,27 @@ class Generator(object):
         assert len(leaves) == 0
         return stack
         
-    def add_contants(self,pred_str):
-        temp = self.sympy_to_prefix(sympify(pred_str))
-        temp2 = self._prefix_to_infix_with_constants(temp)[0]
-        # num = self.count_number_of_constants(temp2)
-        # costs = [random() for x in range(num)]
-        # example = temp2.format(*tuple(costs))
-        # pred_str = str(self.constants_to_placeholder(example))
-        # c=0
-        # expre = list(pred_str)
-        # breakpoint()
-        # for j,i in enumerate(list(pred_str)):
-        #     try:
-        #         if i == 'c' and list(pred_str)[j+1] != 'o':
-        #             expre[j] = 'c{}'.format(str(c))
-        #             c=c+1
-        #     except IndexError:
-        #         if i == 'c':
-        #             expre[j] = 'c{}'.format(str(c))
-        #             c=c+1        
-        # example = "".join(list(expre))
-        return temp2
+    # def add_contants(self,pred_str):
+    #     temp = self.sympy_to_prefix(sympify(pred_str))
+    #     temp2 = self._prefix_to_infix_with_constants(temp)[0]
+    #     # num = self.count_number_of_constants(temp2)
+    #     # costs = [random() for x in range(num)]
+    #     # example = temp2.format(*tuple(costs))
+    #     # pred_str = str(self.constants_to_placeholder(example))
+    #     # c=0
+    #     # expre = list(pred_str)
+    #     # breakpoint()
+    #     # for j,i in enumerate(list(pred_str)):
+    #     #     try:
+    #     #         if i == 'c' and list(pred_str)[j+1] != 'o':
+    #     #             expre[j] = 'c{}'.format(str(c))
+    #     #             c=c+1
+    #     #     except IndexError:
+    #     #         if i == 'c':
+    #     #             expre[j] = 'c{}'.format(str(c))
+    #     #             c=c+1        
+    #     # example = "".join(list(expre))
+    #     return temp2
 
     def tokenize(self, prefix_expr):
         tokenized_expr = []
@@ -573,7 +566,7 @@ class Generator(object):
     #         # val, i = self.parse_int(expr)
     #         # return str(val), expr[i:]
 
-    def unique_constansts(self,expr_list):
+    def add_identifier_constants(self, expr_list):
         curr = Counter()
         curr["cm"] = 0
         curr["ca"] = 0
@@ -582,42 +575,21 @@ class Generator(object):
                 expr_list[i] = "cm_{}".format(curr["cm"])
                 curr["cm"] += 1
             if expr_list[i] == "ca":
-                expr_list[i] = "ca{}".format(curr["ca"])
+                expr_list[i] = "ca_{}".format(curr["ca"])
                 curr["ca"] += 1
+        return expr_list
+
+    def return_constants(self,expr_list):
+        #string = "".join(expr_list)
+        curr = Counter()
+        curr["cm"] = [x for x in expr_list if x[:3] == "cm_"]
+        curr["ca"] = [x for x in expr_list if x[:3] == "ca_"]
         return curr
             
 
 
     def sign(self, x):
         return ("", "-")[x < 0]
-
-    def _prefix_to_infix_benchmark(self, expr):
-        """
-        Return string with constants
-        """
-        # breakpoint()
-        if not expr or len(expr) == 0:
-            raise InvalidPrefixExpression("Empty prefix list.")
-        t = expr[0]
-        if t in self.operators:
-            args = []
-            l1 = expr[1:]
-            for _ in range(self.OPERATORS[t]):
-                i1, l1 = self._prefix_to_infix_benchmark(l1)
-                args.append(i1)
-            if self.OPERATORS[t] == 1:
-                return self.write_infix(t, args), l1
-            else:
-                return self.write_infix(t, args), l1
-        elif t in self.variables:
-            return t, expr[1:]
-        elif t in self.coefficients or t in self.constants or t == "I":
-            return t, expr[1:]
-        else:
-            val = int(expr[0])
-            return val, expr[1:]
-            # val, i = self.parse_int(expr)
-            # return str(val), expr[i:]
 
     def _prefix_to_infix(self, expr):
         """
@@ -635,16 +607,17 @@ class Generator(object):
                 i1, l1 = self._prefix_to_infix(l1)
                 args.append(i1)
             return self.write_infix(t, args), l1
+        elif t in self.coefficients:
+            return "{" + t + "}", expr[1:]
         elif (
             t in self.variables
-            or t in self.coefficients
             or t in self.constants
             or t == "I"
         ):
             return t, expr[1:]
-        else:
-            val, i = self.parse_int(expr)
-            return str(val), expr[i:]
+        else: #INT
+            val = expr[0]
+            return str(val), expr[1:]
 
     def _prefix_to_edges(self, expr):
         t = expr[0][1]
@@ -659,16 +632,6 @@ class Generator(object):
                 edges.extend(inner_edges)
         return edges, li
 
-    def prefix_to_infix_with_constants(self, expr):
-        """
-        Prefix to infix conversion.
-        """
-        p, r = self._prefix_to_infix_with_constants(expr)
-        if len(r) > 0:
-            raise InvalidPrefixExpression(
-                f'Incorrect prefix expression "{expr}". "{r}" was not parsed.'
-            )
-        return f"({p})"
 
     def prefix_to_infix(self, expr):
         """
@@ -865,7 +828,13 @@ class Generator(object):
         if real_nb_ops < nb_ops / 2:
             return None, "Too many operators"
 
-        return f_prefix, f
+        if f == "0" or type(f) == str:
+            return None, "Not a function"
+        
+        sy = f.free_symbols
+        variables = set(map(str, sy))
+        return f_prefix, variables
+
 
 
     def constants_to_placeholder(self, s):

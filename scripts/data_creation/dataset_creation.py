@@ -39,23 +39,17 @@ class Pipepile:
             signal.signal(signal.SIGALRM, handler)
             signal.alarm(1)
         try:
-            prefix, raw_expr = self.env.generate_equation(np.random)
-            if raw_expr == "0" or type(raw_expr) == str:
-                signal.alarm(0)
-                raise ArithmeticError
-            
-            sy = raw_expr.free_symbols
-            sy = set(map(str, sy))
-            breakpoint()
-            prefix = self.env.unique_constansts(prefix)
-            n_const = self.env.count_number_of_constants(format_string)
-            consts = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10"]
-            constants_expression = format_string.format(*tuple(consts[:n_const]))
+            prefix, variables = self.env.generate_equation(np.random)
+            prefix = self.env.add_identifier_constants(prefix)
+            consts =  self.env.return_constants(prefix)
+            infix, _  = self.env._prefix_to_infix(prefix)
+            consts_elemns = {y:y for x in consts.values() for y in x}
+            constants_expression = infix.format(**consts_elemns)
             if time.time() - s > 0.02:
                 signal.alarm(0)
                 return ["Too much time", i]
             eq = lambdify(
-                "x,y,z" + "," + ",".join(consts),
+                "x,y,z," + ",".join(consts_elemns.keys()),
                 constants_expression,
                 modules=["numpy"],
             )
