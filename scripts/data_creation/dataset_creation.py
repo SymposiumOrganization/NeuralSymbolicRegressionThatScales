@@ -17,6 +17,7 @@ from nesymres.utils import create_env
 from nesymres.utils import code_unpickler, code_pickler
 import copyreg
 import types
+from itertools import chain
 
 
 
@@ -26,6 +27,7 @@ class Pipepile:
         manager = Manager()
         self.cnt = manager.list()
         self.is_timer = is_timer
+        self.fun_args = ",".join(chain(list(env.variables),env.coefficients))
 
     def handler(self,signum, frame):
         raise TimeoutError
@@ -57,7 +59,7 @@ class Pipepile:
         consts_elemns = {y:y for x in consts.values() for y in x}
         constants_expression = infix.format(**consts_elemns)
         eq = lambdify(
-            "x,y,z," + ",".join(consts_elemns.keys()),
+            self.fun_args,
             constants_expression,
             modules=["numpy"],
         )
@@ -99,7 +101,7 @@ def creator(number_of_equations, debug):
     else:
         res = list(map(env_pip.return_training_set, tqdm(range(0, total_number))))
     
-    dataset = dclasses.Dataset(eqs=res, config=config_dict)
+    dataset = dclasses.Dataset(eqs=res, config=config_dict, total_variables=list(env.variables), total_coefficients=env.coefficients)
     print("Expression generation took {} seconds".format(time.time() - starttime))
     print(
         "Total number of equations created {}".format(

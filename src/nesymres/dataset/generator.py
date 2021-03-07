@@ -143,13 +143,11 @@ class Generator(object):
             self.variables[str(var)] =sp.Symbol(str(var), real=True, nonzero=True)
         self.var_symbols = list(self.variables)
         self.pos_dict = {x:idx for idx, x in enumerate(self.var_symbols)}        
-        
-
         self.placeholders = {}
         self.placeholders["cm"] = sp.Symbol("cm", real=True, nonzero=True)
         self.placeholders["ca"] = sp.Symbol("ca",real=True, nonzero=True)
         assert 1 <= len(self.variables)
-        self.coefficients = [f"{x}_{i}" for x in self.placeholders.keys() for i in range(100)] # We do not no a priori how many coefficients an expression has, so we set to 100. 
+        self.coefficients = [f"{x}_{i}" for x in self.placeholders.keys() for i in range(params.max_len)] # We do not no a priori how many coefficients an expression has, so we set equal to the maximum length of the expression 
         assert all(v in self.OPERATORS for v in self.SYMPY_OPERATORS.values())
 
         # SymPy elements
@@ -184,20 +182,6 @@ class Generator(object):
 
         # number of words / indices
         self.n_words = params.n_words = len(self.words)
-
-
-        # leaf probabilities
-        # self.leaf_probs = np.array(s).astype(np.float64)
-        # self.leaf_probs = self.leaf_probs / self.leaf_probs.sum()
-        # assert self.leaf_probs[0] > 0
-        # assert (self.leaf_probs[1] == 0) == (self.n_coefficients == 0)
-
-        # possible leaves
-        # self.n_leaves = len(self.variables) + self.n_coefficients
-        # if self.leaf_probs[2] > 0:
-        #     self.n_leaves += 2 #-1, 1
-        # if self.leaf_probs[3] > 0:
-        #     self.n_leaves += len(self.constants)
 
         # generation parameters
         self.nl = 1  # self.n_leaves
@@ -276,24 +260,6 @@ class Generator(object):
             for i in range(max(len(x) for x in D))
         ]
         return D
-
-    # def parse_int(self, lst):
-    #     """
-    #     Parse a list that starts with an integer.
-    #     Return the integer value, and the position it ends in the list.
-    #     """
-    #     base = self.int_base
-    #     # balanced = self.balanced
-    #     val = 0
-    #     i = 0
-    #     for x in lst[1:]:
-    #         if not (x.isdigit() or x[0] == "-" and x[1:].isdigit()):
-    #             break
-    #         val = val * base + int(x)
-    #         i += 1
-    #     if base > 0 and lst[0] == "INT-":
-    #         val = -val
-    #     return val, i + 1
 
     def sample_next_pos_ubi(self, nb_empty, nb_ops, rng):
         """
@@ -506,8 +472,8 @@ class Generator(object):
             
 
 
-    def sign(self, x):
-        return ("", "-")[x < 0]
+    # def sign(self, x):
+    #     return ("", "-")[x < 0]
 
     def _prefix_to_infix(self, expr):
         """
@@ -666,32 +632,32 @@ class Generator(object):
         # unknown operator
         raise UnknownSymPyOperator(f"Unknown SymPy operator: {expr}")
 
-    def reduce_coefficients(self, expr):
-        return reduce_coefficients(
-            expr, self.variables.values(), self.coefficients.values()
-        )
+    # def reduce_coefficients(self, expr):
+    #     return reduce_coefficients(
+    #         expr, self.variables.values(), self.coefficients.values()
+    #     )
 
-    def reindex_coefficients(self, expr):
-        if self.n_coefficients == 0:
-            return expr
-        return reindex_coefficients(
-            expr, list(self.coefficients.values())[: self.n_coefficients]
-        )
+    # def reindex_coefficients(self, expr):
+    #     if self.n_coefficients == 0:
+    #         return expr
+    #     return reindex_coefficients(
+    #         expr, list(self.coefficients.values())[: self.n_coefficients]
+    #     )
 
-    def extract_non_constant_subtree(self, expr):
-        return extract_non_constant_subtree(expr, self.variables.values())
+    # def extract_non_constant_subtree(self, expr):
+    #     return extract_non_constant_subtree(expr, self.variables.values())
 
-    def simplify_const_with_coeff(self, expr, coeffs=None):
-        if coeffs is None:
-            coeffs = self.coefficients.values()
-        for coeff in coeffs:
-            expr = simplify_const_with_coeff(expr, coeff)
-        return expr
+    # def simplify_const_with_coeff(self, expr, coeffs=None):
+    #     if coeffs is None:
+    #         coeffs = self.coefficients.values()
+    #     for coeff in coeffs:
+    #         expr = simplify_const_with_coeff(expr, coeff)
+    #     return expr
 
     # @timeout(3)
-    @staticmethod
-    def count_number_of_constants(format_string):
-        return len(re.findall(r"({})", format_string))
+    # @staticmethod
+    # def count_number_of_constants(format_string):
+    #     return len(re.findall(r"({})", format_string))
 
     def process_equation(self, infix, check_if_valid=True):
         f = self.infix_to_sympy(infix, check_if_valid=check_if_valid)
@@ -710,17 +676,6 @@ class Generator(object):
         f = remove_root_constant_terms(f, list(self.variables.values()), 'mul')
         f = add_multiplicative_constants(f, self.placeholders["cm"], unary_operators=self.una_ops)
         f = add_additive_constants(f, self.placeholders, unary_operators=self.una_ops)
-        # remove additive constant, re-index coefficients
-        # if rng.randint(2) == 0:
-        # f = extract_non_constant_subtree(f, list(self.variables.values()))
-        
-        # f = self.reduce_coefficients(f)
-        # f = self.simplify_const_with_coeff(f)
-        # f = self.reindex_coefficients(f)
-
-        # skip invalid expressions
-        # if has_inf_nan(f):
-        #     return None, "There are nans"
 
         return f
 

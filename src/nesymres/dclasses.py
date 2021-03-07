@@ -15,6 +15,8 @@ class Equation:
 class Dataset:
     eqs: List[Equation]
     config: dict
+    total_coefficients: list
+    total_variables: list
 
 
 

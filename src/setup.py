@@ -7,6 +7,6 @@ setuptools.setup(
       packages=setuptools.find_packages('.'),
       package_dir={'': '.'},
       install_requires=[
-          'numpy','sympy', 'pandas','click', 'tqdm','numexpr','jsons'
+          'numpy','sympy', 'pandas','click', 'tqdm','numexpr','json'
       ]
      )
