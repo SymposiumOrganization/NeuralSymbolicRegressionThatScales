@@ -9,12 +9,16 @@ import os
 from nesymres.dataset import generator
 import time
 import signal
-from nesymres import utils, dclasses
+from nesymres import dclasses
 from pathlib import Path
 import pickle
+from sympy import lambdify 
+from nesymres.utils import create_env
+from nesymres.utils import code_unpickler, code_pickler
+import copyreg
+import types
 
-def handler(signum, frame):
-    raise TimeoutError
+
 
 class Pipepile:
     def __init__(self, env: generator.Generator, is_timer=False):
@@ -23,56 +27,57 @@ class Pipepile:
         self.cnt = manager.list()
         self.is_timer = is_timer
 
+    def handler(self,signum, frame):
+        raise TimeoutError
+
     def return_training_set(self, i):
         np.random.seed(i)
         while True:
-            res = self.create_lambda(np.random.randint(2**32-1))
             try:
-                if len(res) > 2:
-                    return res
+                res = self.create_lambda(np.random.randint(2**32-1))
+                assert type(res) == dclasses.Equation
+                return res
             except TimeoutError:
+                signal.alarm(0)
                 continue
-        return ["Loop terminated", i]
+            except generator.NotCorrectIndependentVariables:
+                signal.alarm(0)
+                continue
+
+        
 
     def create_lambda(self, i):
         if self.is_timer:
-            signal.signal(signal.SIGALRM, handler)
+            signal.signal(signal.SIGALRM, self.handler)
             signal.alarm(1)
-        try:
-            prefix, variables = self.env.generate_equation(np.random)
-            prefix = self.env.add_identifier_constants(prefix)
-            consts =  self.env.return_constants(prefix)
-            infix, _  = self.env._prefix_to_infix(prefix)
-            consts_elemns = {y:y for x in consts.values() for y in x}
-            constants_expression = infix.format(**consts_elemns)
-            if time.time() - s > 0.02:
-                signal.alarm(0)
-                return ["Too much time", i]
-            eq = lambdify(
-                "x,y,z," + ",".join(consts_elemns.keys()),
-                constants_expression,
-                modules=["numpy"],
-            )
-            res = dclasses.Equation(code=eq.__code__,)
-            res = [a.__code__, str(expression), format_string, sy, i]
-            signal.alarm(0)
-        except TimeoutError:
-            res = ["TimeOut Error", i]
-            signal.alarm(0)
+        prefix, variables = self.env.generate_equation(np.random)
+        prefix = self.env.add_identifier_constants(prefix)
+        consts =  self.env.return_constants(prefix)
+        infix, _  = self.env._prefix_to_infix(prefix)
+        consts_elemns = {y:y for x in consts.values() for y in x}
+        constants_expression = infix.format(**consts_elemns)
+        eq = lambdify(
+            "x,y,z," + ",".join(consts_elemns.keys()),
+            constants_expression,
+            modules=["numpy"],
+        )
+        res = dclasses.Equation(expr=infix, code=eq.__code__, coeff_dict=consts_elemns, variables=variables)
+        signal.alarm(0) 
         return res
 
 
 @click.command()
 @click.option(
     "--number_of_equations",
-    default=1000,
+    default=250,
     help="Total number of equations to generate",
 )
 @click.option("--debug/--no-debug", default=True)
 def creator(number_of_equations, debug):
+    copyreg.pickle(types.CodeType, code_pickler, code_unpickler) #Needed for serializing code objects
     total_number = number_of_equations
     warnings.filterwarnings("error")
-    env, config_dict = utils.create_env("config.json")
+    env, config_dict = create_env("config.json")
     env_pip = Pipepile(env, is_timer=not debug)
     starttime = time.time()
     func = []
@@ -92,64 +97,26 @@ def creator(number_of_equations, debug):
             pass
 
     else:
-        res = map(env_pip.return_training_set, tqdm(range(0, total_number)))
-
-    funcs = [l[0] for l in res if len(l) > 2]
-    no_c = [l[1] for l in res if len(l) > 2]
-    w_c = [l[2] for l in res if len(l) > 2]
-    pref = [l[3] for l in res if len(l) > 2]
-    syy = [l[4] for l in res if len(l) > 2]
-    errors = [[l[0], l[1]] for l in res if len(l) == 2]
+        res = list(map(env_pip.return_training_set, tqdm(range(0, total_number))))
+    
+    dataset = dclasses.Dataset(eqs=res, config=config_dict)
     print("Expression generation took {} seconds".format(time.time() - starttime))
     print(
-        "Percentage of errors during expression generation {}".format(
-            len(errors) / total_number
+        "Total number of equations created {}".format(
+            len(res)
         )
     )
-    starttime = time.time()
-    cntn = 0
-    fin_no_c = []
-    fin_funcs = []
-    fin_syy = []
-    fin_toks = []
-    fin_return_home = []
-    fin_w_c = []
-    for e in range(len(pref) - 1):
-        try:
-            token_sentence = env.tokenize(pref[e])
-        except Exception as l:
-            cntn += 1
-            continue
-        fin_toks.append(token_sentence)
-        fin_return_home.append(
-            env._prefix_to_infix_benchmark(env.de_tokenize(token_sentence[1:]))
-        )
-        fin_no_c.append(no_c[e])
-        fin_funcs.append(funcs[e])
-        fin_syy.append(syy[e])
-        fin_w_c.append(w_c[e])
-
-    print("Tokenization took {} seconds".format(time.time() - starttime))
-    print("Percentage of errors during tokenization {}".format(cntn / total_number))
-    d = {
-        "Expression": fin_no_c,
-        "Format_Expression": fin_w_c,
-        "Tokenized": fin_toks,
-        "Symbol": fin_syy,
-        "Funcs": fin_funcs,
-        "Return": fin_return_home,
-        "Config": config_dict,
-    }
+    
     if not debug:
-        folder_path = Path("data/datasets/")
+        folder_path = "data/datasets/" 
     else:
-        folder_path = Path("data/datasets/")
-    folder_path.mkdir(parents=True,exist_ok=True)
-
+        folder_path = "data/datasets/debug" 
+        
+    Path(folder_path).mkdir(parents=True, exist_ok=True)
     file_name = "{}K".format(int(number_of_equations / 1000))
     path = os.path.join(folder_path, file_name)
     with open(path, "wb") as file:
-        pickle.dump(d, file)
+        pickle.dump(dataset, file)
 
 if __name__ == "__main__":
     creator()

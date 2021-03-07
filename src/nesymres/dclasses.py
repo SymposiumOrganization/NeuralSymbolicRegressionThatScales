@@ -5,8 +5,10 @@ from typing import List
 @dataclass
 class Equation:
     code: CodeType
-    format_string: str
-    symbols: set
+    expr: str
+    coeff_dict: dict
+    variables: set
+
 
 
 @dataclass

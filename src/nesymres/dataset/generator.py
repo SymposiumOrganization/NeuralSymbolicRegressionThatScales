@@ -39,19 +39,11 @@ from collections import Counter
 CLEAR_SYMPY_CACHE_FREQ = 10000
 
 
+class NotCorrectIndependentVariables(Exception):
+    pass
 
-def eval_test_zero(eq):
-    """
-    Evaluate an equation by replacing all its free symbols with random values.
-    """
-    variables = eq.free_symbols
-    assert len(variables) <= 3
-    outputs = []
-    for values in itertools.product(*[TEST_ZERO_VALUES for _ in range(len(variables))]):
-        _eq = eq.subs(zip(variables, values)).doit()
-        outputs.append(float(sp.Abs(_eq.evalf())))
-    return outputs
-
+class UnknownSymPyOperator(Exception):
+    pass
 
 class Generator(object):
 
@@ -62,6 +54,7 @@ class Generator(object):
         sp.Pow: "pow",
         sp.exp: "exp",
         sp.log: "ln",
+        sp.Abs: 'abs',
 
         # Trigonometric Functions
         sp.sin: "sin",
@@ -95,6 +88,7 @@ class Generator(object):
         "sqrt": 1,
         "exp": 1,
         "ln": 1,
+        "abs": 1,
 
         # Trigonometric Functions
         "sin": 1,
@@ -331,20 +325,6 @@ class Generator(object):
             max_idxs = 0
         return [list(self.variables.keys())[rng.randint(low=0,high=max_idxs+1)]]
 
-    # def get_leaf(self, max_int, rng):
-    #     """
-    #     Generate a leaf.
-    #     """
-    #     leaf_type = rng.choice(4, p=self.leaf_probs)
-    #     if leaf_type == 0:
-    #         return [list(self.variables.keys())[rng.randint(len(self.variables))]]
-    #     elif leaf_type == 2:
-    #         c = 1
-    #         c = c if (self.positive or rng.randint(2) == 0) else -c
-    #         return self.write_int(c)
-    #     else:
-    #         return [self.constants[rng.randint(len(self.constants))]]
-
     def _generate_expr(
         self,
         nb_total_ops,
@@ -391,23 +371,12 @@ class Generator(object):
         assert len([1 for v in stack if v in self.all_ops]) == nb_total_ops
         assert len([1 for v in stack if v is None]) == t_leaves
 
-        # create leaves
-        # optionally add variables x, y, z if possible
-        # assert not require_z or require_y
-        # assert not require_y or require_x
         leaves = []
         curr_leaves = set()
         for _ in range(t_leaves):
             new_element = self.get_leaf(curr_leaves, rng)
             leaves.append(new_element)
             curr_leaves.add(*new_element)
-        # if require_z and t_leaves >= 2:
-        #     leaves[1] = ["z"]
-        # if require_y:
-        #     leaves[0] = ["y"]
-        # if require_x and not any(len(leaf) == 1 and leaf[0] == "x" for leaf in leaves):
-        #     leaves[-1] = ["x"]
-        # rng.shuffle(leaves)
 
         # insert leaves into tree
         for pos in range(len(stack) - 1, -1, -1):
@@ -415,28 +384,7 @@ class Generator(object):
                 stack = stack[:pos] + leaves.pop() + stack[pos + 1 :]
         assert len(leaves) == 0
         return stack
-        
-    # def add_contants(self,pred_str):
-    #     temp = self.sympy_to_prefix(sympify(pred_str))
-    #     temp2 = self._prefix_to_infix_with_constants(temp)[0]
-    #     # num = self.count_number_of_constants(temp2)
-    #     # costs = [random() for x in range(num)]
-    #     # example = temp2.format(*tuple(costs))
-    #     # pred_str = str(self.constants_to_placeholder(example))
-    #     # c=0
-    #     # expre = list(pred_str)
-    #     # breakpoint()
-    #     # for j,i in enumerate(list(pred_str)):
-    #     #     try:
-    #     #         if i == 'c' and list(pred_str)[j+1] != 'o':
-    #     #             expre[j] = 'c{}'.format(str(c))
-    #     #             c=c+1
-    #     #     except IndexError:
-    #     #         if i == 'c':
-    #     #             expre[j] = 'c{}'.format(str(c))
-    #     #             c=c+1        
-    #     # example = "".join(list(expre))
-    #     return temp2
+    
 
     def tokenize(self, prefix_expr):
         tokenized_expr = []
@@ -535,36 +483,6 @@ class Generator(object):
         raise InvalidPrefixExpression(
             f"Unknown token in prefix expression: {token}, with arguments {args}"
         )
-
-    # def _prefix_to_infix_with_constants(self, expr, is_const=1):
-    #     """
-    #     Return string with constants
-    #     """
-    #     if not expr or len(expr) == 0:
-    #         raise InvalidPrefixExpression("Empty prefix list.")
-    #     t = expr[0]
-    #     if t in self.operators:
-    #         args = []
-    #         l1 = expr[1:]
-    #         for i in range(self.OPERATORS[t]):
-    #             i1, l1 = self._prefix_to_infix_with_constants(
-    #                 l1, is_const and not (t == "pow" and i > 0)
-    #             )
-    #             args.append(i1)
-    #         if self.OPERATORS[t] == 1:
-    #             return ["", "{}*"][is_const] + self.write_infix(t, args), l1
-    #         else:
-    #             return self.write_infix(t, args), l1
-    #     elif t in self.variables:
-    #         return ["", "{}*"][is_const] + t, expr[1:]
-    #     elif t in self.coefficients or t in self.constants or t == "I":
-    #         return t, expr[1:]
-    #     else:
-    #         val = int(expr[0])
-    #         # sign = lambda x: (1, -1)[x < 0]
-    #         return [val, self.sign(val) + "{}"][is_const], expr[1:]
-    #         # val, i = self.parse_int(expr)
-    #         # return str(val), expr[i:]
 
     def add_identifier_constants(self, expr_list):
         curr = Counter()
@@ -745,10 +663,6 @@ class Generator(object):
         for op_type, op_name in self.SYMPY_OPERATORS.items():
             if isinstance(expr, op_type):
                 return self._sympy_to_prefix(op_name, expr)
-        # environment function
-        for func_name, func in self.functions.items():
-            if isinstance(expr, func):
-                return self._sympy_to_prefix(func_name, expr)
         # unknown operator
         raise UnknownSymPyOperator(f"Unknown SymPy operator: {expr}")
 
@@ -785,10 +699,12 @@ class Generator(object):
         
         symbols = set([str(x) for x in f.free_symbols])
         if not symbols:
-            return None, f"No variables in the expression, skip"
+            raise NotCorrectIndependentVariables()
+            #return None, f"No variables in the expression, skip"
         for s in symbols:
             if not len(set(self.var_symbols[:self.pos_dict[s]]) & symbols) == len(self.var_symbols[:self.pos_dict[s]]):
-                return None, f"Variable {s} in the expressions, but not the one before"
+                raise NotCorrectIndependentVariables()
+                #return None, f"Variable {s} in the expressions, but not the one before"
         
         f = remove_root_constant_terms(f, list(self.variables.values()), 'add')
         f = remove_root_constant_terms(f, list(self.variables.values()), 'mul')
@@ -832,7 +748,7 @@ class Generator(object):
             return None, "Not a function"
         
         sy = f.free_symbols
-        variables = set(map(str, sy))
+        variables = set(map(str, sy)) - set(self.placeholders.keys())
         return f_prefix, variables
 
 
