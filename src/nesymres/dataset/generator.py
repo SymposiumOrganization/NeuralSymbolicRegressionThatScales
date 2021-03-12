@@ -45,6 +45,9 @@ class NotCorrectIndependentVariables(Exception):
 class UnknownSymPyOperator(Exception):
     pass
 
+class ValueErrorExpression(Exception):
+    pass
+
 class Generator(object):
 
     SYMPY_OPERATORS = {

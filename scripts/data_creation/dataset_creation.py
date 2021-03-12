@@ -18,6 +18,7 @@ from nesymres.utils import code_unpickler, code_pickler
 import copyreg
 import types
 from itertools import chain
+import traceback
 
 
 
@@ -43,6 +44,12 @@ class Pipepile:
                 signal.alarm(0)
                 continue
             except generator.NotCorrectIndependentVariables:
+                signal.alarm(0)
+                continue
+            except generator.UnknownSymPyOperator:
+                signal.alarm(0)
+                continue
+            except generator.ValueErrorExpression:
                 signal.alarm(0)
                 continue
 
@@ -87,7 +94,7 @@ def creator(number_of_equations, debug):
     counter = []
     if not debug:
         try:
-            with Pool(multiprocessing.cpu_count()) as p:
+            with multiprocessing.Pool(multiprocessing.cpu_count()) as p:
                 max_ = total_number
                 with tqdm(total=max_) as pbar:
                     for f in p.imap_unordered(
@@ -96,7 +103,8 @@ def creator(number_of_equations, debug):
                         pbar.update()
                         res.append(f)
         except:
-            pass
+            print(traceback.format_exc())
+
 
     else:
         res = list(map(env_pip.return_training_set, tqdm(range(0, total_number))))
