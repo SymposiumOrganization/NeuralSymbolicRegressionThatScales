@@ -17,6 +17,7 @@ class Dataset:
     config: dict
     total_coefficients: list
     total_variables: list
+    unique_index: set = None
 
 
 

@@ -118,9 +118,9 @@ def creator(number_of_equations, debug):
     )
     
     if not debug:
-        folder_path = "data/datasets/" 
+        folder_path = "data/raw_datasets/" 
     else:
-        folder_path = "data/datasets/debug" 
+        folder_path = "data/raw_datasets/debug" 
         
     Path(folder_path).mkdir(parents=True, exist_ok=True)
     file_name = "{}K".format(int(number_of_equations / 1000))

@@ -1,8 +1,8 @@
 import numpy as np
-from eq_learner.marshalling_files import code_unpickler, code_pickler, load_data
+from nesymres.utils import code_unpickler, code_pickler, load_data
 import click
-from eq_learner.DatasetCreator.exploration import add_numerically_identically, create_symbolic_disjoint_set,create_subset
 import pickle
+from nesymres import dclasses
 
 def choose_eqs(res):
     to_keep = []
@@ -17,11 +17,8 @@ def choose_eqs(res):
 def main(val_path,num_target_eq):
     print("Started Loading Data")
     data_val = load_data(val_path)
-    exprs_val = data_val["Expression"]
-    disjoint_sets = create_symbolic_disjoint_set(exprs_val)
-    disjoint_sets, res = add_numerically_identically(data_val["Funcs"],disjoint_sets, extremes=(-10,10))
-    to_keep = choose_eqs(res)[:num_target_eq]
-    subset = create_subset(data_val, to_keep)
+    eqs_unique = [x for idx, x in enumerate(data_val.eqs) if idx in data_val.unique_index]
+    to_keep = choose_eqs(eqs_unique)[:num_target_eq]
     validation_path = val_path + "_subset_{}".format(num_target_eq)
     with open(validation_path, "wb") as file:
         pickle.dump(subset, file)

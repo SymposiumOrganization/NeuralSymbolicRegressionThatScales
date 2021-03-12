@@ -150,7 +150,7 @@ class Generator(object):
         self.placeholders["cm"] = sp.Symbol("cm", real=True, nonzero=True)
         self.placeholders["ca"] = sp.Symbol("ca",real=True, nonzero=True)
         assert 1 <= len(self.variables)
-        self.coefficients = [f"{x}_{i}" for x in self.placeholders.keys() for i in range(params.max_len)] # We do not no a priori how many coefficients an expression has, so we set equal to the maximum length of the expression 
+        self.coefficients = [f"{x}_{i}" for x in self.placeholders.keys() for i in range(2*params.max_len)] # We do not no a priori how many coefficients an expression has, so to be on the same side we equal to two times the maximum number of expressions
         assert all(v in self.OPERATORS for v in self.SYMPY_OPERATORS.values())
 
         # SymPy elements

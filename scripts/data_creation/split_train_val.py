@@ -16,6 +16,7 @@ import warnings
 from numpy import log, cosh, sinh, exp, cos, tanh, sqrt, sin, tan, arctan, nan, pi, e, arcsin, arccos
 from nesymres.utils import code_unpickler, code_pickler, load_data
 from nesymres import dclasses
+from pathlib import Path
 
 def evaluate_fun(args):
     fun ,support = args
@@ -71,7 +72,7 @@ def group_numerical_indetical_eqs(data,disjoint_sets):
     seen = defaultdict(list)
     counter = 0
     for i, val in enumerate(res):
-        if val == []:
+        if type(val) == list and val == []:
             continue
         val = tuple(val)
         assert tuple(val) == tuple(val)
@@ -91,7 +92,7 @@ def group_numerical_indetical_eqs(data,disjoint_sets):
 @click.command()
 @click.option(
     "--eqs_for_validation",
-    default=100,
+    default=1000,
     help="Number of equations for validation",
 )
 @click.option("--data_path", default=None)
@@ -124,30 +125,45 @@ def main(eqs_for_validation, data_path):
     print("Creating Training Set")
     training_indeces = set(range(len(data.eqs)))- set(validation_indeces)
     assert not validation_indeces[0] in training_indeces
-    
+
     train_eqs = [data.eqs[x] for x in training_indeces]
     training_dataset = dclasses.Dataset(eqs=train_eqs, config=data.config, total_coefficients=data.total_coefficients, total_variables=data.total_variables)
     val_eqs = [data.eqs[x] for x in validation_indeces]
     validation_dataset = dclasses.Dataset(eqs=val_eqs, config=data.config, total_coefficients=data.total_coefficients, total_variables=data.total_variables)
 
     t = [x.expr for x in training_dataset.eqs]
+    t_n = [x for x in training_indeces if disjoint_sets[x]]
     v = [x.expr for x in validation_dataset.eqs]
+    v_n = [x for x in validation_indeces if disjoint_sets[x]]
     print("Number in the training: ", len(training_dataset.eqs))
-    print("Unique number in the training: ", len(set(t)))
+    print(f"Symbolically Unique number in the training: {len(set(t))},  {len(set(t))/len(training_dataset.eqs)} of training")
+    print(f"Numerically Unique number in the training: {len(t_n)}, {len(set(t_n))/len(training_dataset.eqs)} of training")
     print("Number in the validation: ", len(validation_dataset.eqs))
-    print("Unique number in the validation: ", len(set(v)))
+    print(f"Symbolically Unique number in the validation: {len(set(v))}, {len(set(v))/len(validation_dataset.eqs)} of validation")
+    print(f"Numerically Unique number in the validation: {len(v_n)}, {len(set(v_n))/len(validation_dataset.eqs)} of validation")
     
+    assert len(v_n) == eqs_for_validation
     assert not len(
         set(t) & set(v)
     )
+    
+    train_unique_indices = [idx for idx, x in enumerate(training_indeces) if disjoint_sets[x]]
+    training_dataset.unique_index = set(train_unique_indices)
+    val_unique_indices = [idx for idx, x in enumerate(validation_indeces) if disjoint_sets[x]]
+    validation_dataset.unique_index = set(val_unique_indices)
 
-    training_path = data_path + "_train"
+    p = os.path.join(Path(data_path).parent.parent, "datasets", Path(data_path).stem)
+    Path(p).mkdir(parents=True, exist_ok=True)
+    training_path = os.path.join(p,Path(p).stem + "_train")
     with open(training_path, "wb") as file:
         pickle.dump(training_dataset, file)
 
-    validation_path = data_path + "_val"
+    validation_path= os.path.join(p,Path(p).stem + "_val")
     with open(validation_path, "wb") as file:
         pickle.dump(validation_dataset, file)
+
+    Path(os.path.join(p, ".dirstamp")).touch()
+
 
 if __name__ == "__main__":
     main()

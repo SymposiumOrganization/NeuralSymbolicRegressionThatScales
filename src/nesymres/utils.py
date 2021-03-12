@@ -5,6 +5,7 @@ import pickle
 import json
 from . import dclasses
 from .dataset import generator
+from .dclasses import Dataset
 
 def code_unpickler(data):
     return marshal.loads(data)
@@ -14,7 +15,7 @@ def code_pickler(code):
     return code_unpickler, (marshal.dumps(code),)
 
 
-def load_data(path_dataset):
+def load_data(path_dataset) -> Dataset:
     copyreg.pickle(types.CodeType, code_pickler, code_unpickler)
     with open(path_dataset, "rb") as f:
         data = pickle.load(f)
