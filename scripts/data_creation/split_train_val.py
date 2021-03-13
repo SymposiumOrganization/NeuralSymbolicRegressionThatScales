@@ -74,7 +74,7 @@ def group_numerical_indetical_eqs(data,disjoint_sets):
 @click.command()
 @click.option(
     "--eqs_for_validation",
-    default=1000,
+    default=10000,
     help="Number of equations for validation",
 )
 @click.option("--data_path", default=None)

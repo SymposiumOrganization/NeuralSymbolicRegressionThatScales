@@ -178,9 +178,9 @@ class SetTransformer(pl.LightningModule):
             self.log("val_loss", loss, on_epoch=True)
 
     def forward(self, x):
-        # in lightning, forward defines the prediction/inference actions
+        ## standard values
         beam_size = 10
-        len1 = 50  # Still unclear what is this for
+        len1 = 50 
         _, _, beam = beam_search(
             self.dec,
             self.env,
