@@ -1,6 +1,5 @@
 import marshal
 import copyreg
-import types
 import pickle
 import json
 import os
@@ -13,27 +12,11 @@ import torch
 import multiprocessing
 from tqdm import tqdm
 import warnings
-from numpy import log, cosh, sinh, exp, cos, tanh, sqrt, sin, tan, arctan, nan, pi, e, arcsin, arccos
 from nesymres.utils import code_unpickler, code_pickler, load_data
 from nesymres import dclasses
 from pathlib import Path
+from nesymres.dataset.data_utils import evaluate_fun
 
-def evaluate_fun(args):
-    fun ,support = args
-    if type(fun)==list and not len(fun):
-        return []
-    f = types.FunctionType(fun, globals=globals(), name='f')
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            evaled = f(*support)
-            if type(evaled) == torch.Tensor and evaled.dtype == torch.float32:
-                return evaled.numpy().astype('float16')
-            else:
-                return []
-    except NameError as e:
-        print(e)
-        return []
 
 def group_symbolically_indetical_eqs(data,indexes_dict,disjoint_sets):
     for i, val in enumerate(data.eqs):
@@ -44,7 +27,6 @@ def group_symbolically_indetical_eqs(data,indexes_dict,disjoint_sets):
             first_key = indexes_dict[val.expr][0]
             disjoint_sets[first_key].append(i)
     return indexes_dict, disjoint_sets
-
 
 def group_numerical_indetical_eqs(data,disjoint_sets):
     sampling_distribution = Uniform(-25,25)

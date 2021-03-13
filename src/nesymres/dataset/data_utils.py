@@ -7,6 +7,9 @@ import warnings
 import inspect
 from torch.distributions.uniform import Uniform
 import math
+import types
+from numpy import log, cosh, sinh, exp, cos, tanh, sqrt, sin, tan, arctan, nan, pi, e, arcsin, arccos
+
 
 
 def dataset_loader(train_dataset, test_dataset, batch_size=1024, valid_size=0.20):
@@ -211,3 +214,22 @@ def custom_collate_fn(y):
     #     ### Take care of tokens
 
     return res, tokens
+
+
+
+def evaluate_fun(args):
+    fun ,support = args
+    if type(fun)==list and not len(fun):
+        return []
+    f = types.FunctionType(fun, globals=globals(), name='f')
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            evaled = f(*support)
+            if type(evaled) == torch.Tensor and evaled.dtype == torch.float32:
+                return evaled.numpy().astype('float16')
+            else:
+                return []
+    except NameError as e:
+        print(e)
+        return []
