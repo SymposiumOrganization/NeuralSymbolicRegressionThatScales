@@ -8,7 +8,7 @@ class Equation:
     expr: str
     coeff_dict: dict
     variables: set
-
+    support: tuple = None
 
 @dataclass
 class DataModuleParams:
@@ -51,7 +51,8 @@ class DataModuleParams:
     type_of_sampling_points: str = ["Constant", "Logarithm"][1]
     predict_c: bool = False
     constant_degree_of_freedom: int = 3
-    support_extremes: tuple = (-10,10)
+    fun_support: tuple = (-10,10)
+    constant_support: tuple = (-10,10)
     distribution_support: str = ["Uniform", "Gaussian"][0]
 
 @dataclass
@@ -60,14 +61,14 @@ class Architecture:
     dec_pf_dim: int = 512
     dec_layers: int = 5 
     dim_hidden: int = 512  
-    lr: int = 0.0001,
-    dropout: int = 0,
-    num_features: int = 10,
-    ln: bool = True,
-    N_p:int = 0,
-    num_inds: int = 50,
+    lr: int = 0.0001
+    dropout: int = 0
+    num_features: int = 10
+    ln: bool = True
+    N_p:int = 0
+    num_inds: int = 50
     activation: str = "relu"
-    bit32: bool = True
+    bit16: bool = True
     norm: bool = True
     linear: bool= False
     input_normalization: bool = False
@@ -75,6 +76,12 @@ class Architecture:
     trg_pad_idx: int = 0
     length_eq: int = 30
     n_l_enc: int = 4
+    mean: float = 0.5  
+    std: float = 0.5 
+    dim_input: int = 4
+    num_heads: int = 8
+    output_dim: int = 33
+    dropout: float = 0
 
 
 
@@ -84,7 +91,7 @@ class Params:
     datamodule_params_val: DataModuleParams = DataModuleParams()
     datamodule_params_test: DataModuleParams = DataModuleParams()
     architecture: Architecture = Architecture()
-    num_of_workers: int = 64
+    num_of_workers: int = 0
     max_epochs: int = 200
     val_check_interval: float = 0.05
     precision: int = 16

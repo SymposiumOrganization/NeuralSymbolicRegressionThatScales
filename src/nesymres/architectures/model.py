@@ -3,9 +3,8 @@ from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, random_split
 import pytorch_lightning as pl
-from .modules import *
 from .set_encoder import SetEncoder
-from .beam_search import *
+#from .beam_search import *
 from ..dclasses import Architecture
 
 
@@ -19,7 +18,7 @@ class Model(pl.LightningModule):
         self.enc = SetEncoder(cfg)
         self.tok_embedding = nn.Embedding(cfg.output_dim, cfg.dim_hidden)
         self.pos_embedding = nn.Embedding(cfg.length_eq, cfg.dim_hidden)
-        if is_sin_emb:
+        if cfg.sinuisodal_embeddings:
             self.create_sinusoidal_embeddings(
                 cfg.length_eq, cfg.dim_hidden, out=self.pos_embedding.weight
             )
@@ -27,11 +26,12 @@ class Model(pl.LightningModule):
             d_model=cfg.dim_hidden,
             nhead=cfg.num_heads,
             dim_feedforward=cfg.dec_pf_dim,
-            dropout=cfg.dec_dropout,
+            dropout=cfg.dropout,
         )
         self.dec = nn.TransformerDecoder(self.decoder_layer, num_layers=cfg.dec_layers)
         self.fc_out = nn.Linear(cfg.dim_hidden, cfg.output_dim)
-        self.dropout = nn.Dropout(cfg.dec_dropout)
+        self.dropout = nn.Dropout(cfg.dropout)
+        self.cfg = cfg
         #self.save_hyperparameters()
     
 
@@ -152,7 +152,7 @@ class Model(pl.LightningModule):
         return embedding
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.cfg.lr)
         return optimizer
 
 

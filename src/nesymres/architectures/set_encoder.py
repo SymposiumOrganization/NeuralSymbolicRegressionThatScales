@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
-from .modules import ISAB, PMA
+from .set_transformer import ISAB, PMA
 from ..dclasses import Architecture
 
 class SetEncoder(pl.LightningModule):
@@ -11,15 +11,16 @@ class SetEncoder(pl.LightningModule):
         #self.bit16 = bit16
         assert cfg.linear != cfg.bit16, "one and only one between linear and bit16 must be true at the same time" 
         if cfg.norm:
-            self.register_buffer("mean", mean)
-            self.register_buffer("std", std)
+            self.register_buffer("mean", torch.tensor(cfg.mean))
+            self.register_buffer("std", torch.tensor(cfg.std))
+            
         #self.activation = activation
         #self.input_normalization = input_normalization
         if cfg.linear:
             self.linearl = nn.Linear(cfg.dim_input,16*cfg.dim_input)
         self.selfatt = nn.ModuleList()
         #dim_input = 16*dim_input
-        self.selfatt1 = ISAB(16*cfg.dim_input, dim_hidden, cfg.num_heads, cfg.num_inds, ln=cfg.ln)
+        self.selfatt1 = ISAB(16*cfg.dim_input, cfg.dim_hidden, cfg.num_heads, cfg.num_inds, ln=cfg.ln)
         for i in range(cfg.n_l_enc):
             self.selfatt.append(ISAB(cfg.dim_hidden, cfg.dim_hidden, cfg.num_heads, cfg.num_inds, ln=cfg.ln))
         self.outatt = PMA(cfg.dim_hidden, cfg.num_heads, cfg.num_features, ln=cfg.ln)

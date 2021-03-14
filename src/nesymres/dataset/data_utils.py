@@ -175,47 +175,6 @@ def tokens_padding(tokens):
     # return res
 
 
-def custom_collate_fn(y):
-    (
-        function,
-        symbols,
-        tokens,
-        p,
-        type_of_sampling_points,
-        support,
-        constants_interval,
-    ) = (
-        list(zip(*y))[0],
-        list(zip(*y))[1],
-        list(zip(*y))[2],
-        list(zip(*y))[3],
-        list(zip(*y))[4],
-        list(zip(*y))[5],
-        list(zip(*y))[6],
-    )
-    tokens = tokens_padding(tokens)
-    # p = random.randrange(500,1500)
-    res, tokens = evaluate_and_wrap(
-        function,
-        symbols,
-        tokens,
-        p,
-        type_of_sampling_points,
-        support,
-        constants_interval,
-    )
-    ### Take care of values
-    # if type(y[0]) == tuple:
-    #     numerical_values = list(zip(*y))[0]
-    #     dropped_idx  = set([idx for idx, x in enumerate(numerical_values) if type(x) == type(None)])
-    #     numbers = [numerical_values[idx].unsqueeze(0) for idx in range(len(numerical_values)) if not idx in dropped_idx]
-    #     num_tensors = torch.cat(numbers)
-
-    #     ### Take care of tokens
-
-    return res, tokens
-
-
 
 def evaluate_fun(args):
     fun ,support = args
