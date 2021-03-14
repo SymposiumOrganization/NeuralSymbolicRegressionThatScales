@@ -4,78 +4,40 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, random_split
 import pytorch_lightning as pl
 from .modules import *
-from .set_encoder import *
+from .set_encoder import SetEncoder
 from .beam_search import *
+from ..dclasses import Architecture
 
 
-
-class SetTransformer(pl.LightningModule):
+class Model(pl.LightningModule):
     def __init__(
         self,
-        n_l_enc,
-        src_pad_idx,
-        trg_pad_idx,
-        dim_input,
-        output_dim,
-        dim_hidden,
-        dec_layers,
-        num_heads,
-        dec_pf_dim,
-        dec_dropout,
-        length_eq,
-        lr,
-        num_inds,
-        ln,
-        num_features,
-        is_sin_emb,
-        bit32,
-        norm,
-        activation,
-        linear,
-        mean,
-        std,
-        input_normalization
+        cfg: Architecture
     ):
         super().__init__()
 
-        self.lr = lr
-        self.bit32 = bit32
-        self.output_dim = output_dim
-        self.length_eq = length_eq
+
         self.src_pad_idx = src_pad_idx
         self.trg_pad_idx = trg_pad_idx
-        self.enc = SetEncoder(
-            n_l_enc,
-            dim_input,
-            dim_hidden,
-            num_heads,
-            num_inds,
-            ln,
-            num_features,
-            linear,
-            activation,
-            bit32,
-            norm,
-            mean,
-            std,
-            input_normalization
-        )
-        self.tok_embedding = nn.Embedding(output_dim, dim_hidden)
-        self.pos_embedding = nn.Embedding(length_eq, dim_hidden)
+        self.enc = SetEncoder(cfg)
+
+        self.tok_embedding = nn.Embedding(cfg.output_dim, cfg.dim_hidden)
+        self.pos_embedding = nn.Embedding(cfg.length_eq, cfg.dim_hidden)
         if is_sin_emb:
             self.create_sinusoidal_embeddings(
-                length_eq, dim_hidden, out=self.pos_embedding.weight
+                cfg.length_eq, cfg.dim_hidden, out=self.pos_embedding.weight
             )
         self.decoder_layer = nn.TransformerDecoderLayer(
-            d_model=dim_hidden,
-            nhead=num_heads,
-            dim_feedforward=dec_pf_dim,
-            dropout=dec_dropout,
+            d_model=cfg.dim_hidden,
+            nhead=cfg.num_heads,
+            dim_feedforward=cfg.dec_pf_dim,
+            dropout=cfg.dec_dropout,
         )
-        self.dec = nn.TransformerDecoder(self.decoder_layer, num_layers=dec_layers)
-        self.fc_out = nn.Linear(dim_hidden, output_dim)
-        self.dropout = nn.Dropout(dec_dropout)
-        self.save_hyperparameters()
+        self.dec = nn.TransformerDecoder(self.decoder_layer, num_layers=cfg.dec_layers)
+        self.fc_out = nn.Linear(cfg.dim_hidden, cfg.output_dim)
+        self.dropout = nn.Dropout(cfg.dec_dropout)
+        #self.save_hyperparameters()
+    
 
     def create_sinusoidal_embeddings(self, n_pos, dim, out):
         position_enc = np.array(

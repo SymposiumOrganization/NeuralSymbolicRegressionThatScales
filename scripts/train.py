@@ -11,9 +11,9 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning import Trainer, seed_everything
 from dataclasses import dataclass
 from typing import Tuple
-from nesymres.utils import *
-from nesymres.architectures.set_transformer import * 
-from nesymres.dataset.data_module import * 
+#from nesymres.utils import *
+from nesymres.architectures.model import Model
+from nesymres.dataset.data_module import DataModule
 from nesymres.dclasses import Params
 seed_everything(9)
 
@@ -84,12 +84,12 @@ def main():
     # print(S)
 
     data = DataModule(
-        data_dir1=S,
-        data_dir2="facebook/20000K_val",
-        data_dir3="AIFeynman/ai_feymann",
+        train_dir="datasets/100K/100K_train",
+        val_dir="datasets/100K/100K_val_subset_100",
+        test_dir=None,
         cfg=params
     )
-    model = SetTransformer(cfg=params)
+    model = Model(cfg=params)
     #     n_l_enc,
     #     src_pad_idx,
     #     trg_pad_idx,

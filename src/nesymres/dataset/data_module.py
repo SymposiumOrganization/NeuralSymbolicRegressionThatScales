@@ -25,7 +25,7 @@ class DataModule(pl.LightningDataModule):
         self.data_dir1 = train_dir
         self.data_dir2 = val_dir
         self.data_dir3 = test_dir
-        self.batch = cfg.datamodule_params.batch_size
+        self.batch = cfg.batch_size
         self.datamodule_params_train = cfg.datamodule_params_train
         self.datamodule_params_val = cfg.datamodule_params_val
         self.num_of_workers = cfg.num_of_workers

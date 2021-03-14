@@ -54,7 +54,6 @@ class DataModuleParams:
     constant_degree_of_freedom: int = 3
     support_extremes: tuple = (-10,10)
     distribution_support: str = ["Uniform", "Gaussian"][0]
-    batch_size: int = 450
 
 @dataclass
 class Architecture:
@@ -85,3 +84,5 @@ class Params:
     max_epochs: int = 200
     val_check_interval: float = 0.05
     precision: int = 16
+    batch_size: int = 450
+
