@@ -3,9 +3,9 @@ from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, random_split
 import pytorch_lightning as pl
-from modules import *
-from set_encoder import *
-from beam_search import *
+from .modules import *
+from .set_encoder import *
+from .beam_search import *
 
 
 

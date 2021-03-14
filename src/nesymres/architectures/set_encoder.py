@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
-from modules import *
+from .modules import ISAB, PMA
 
 class SetEncoder(pl.LightningModule):
     def __init__(self, n_l,dim_input,dim_hidden,num_heads,num_inds,ln,num_features,linear,activation,bit16,norm,mean,std,input_normalization):

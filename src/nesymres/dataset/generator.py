@@ -48,6 +48,10 @@ class UnknownSymPyOperator(Exception):
 class ValueErrorExpression(Exception):
     pass
 
+class ImAccomulationBounds(Exception):
+    pass
+
+
 class Generator(object):
 
     SYMPY_OPERATORS = {
@@ -292,7 +296,7 @@ class Generator(object):
             max_idxs = max([self.pos_dict[x] for x in curr_leaves]) + 1
         else:
             max_idxs = 0
-        return [list(self.variables.keys())[rng.randint(low=0,high=max_idxs+1)]]
+        return [list(self.variables.keys())[rng.randint(low=0,high=min(max_idxs+1, len(self.variables.keys())))]]
 
     def _generate_expr(
         self,
@@ -555,8 +559,10 @@ class Generator(object):
         """
         Convert an infix expression to SymPy.
         """
-
-        expr = parse_expr(infix, evaluate=True, local_dict=self.local_dict)
+        try:
+            expr = parse_expr(infix, evaluate=True, local_dict=self.local_dict)
+        except ValueError:
+            raise ImAccomulationBounds
         if expr.has(sp.I) or expr.has(AccumBounds):
             raise ValueErrorExpression
         if not no_rewrite:

@@ -4,7 +4,7 @@ import warnings
 import torch
 from torch.utils import data
 import math
-from sympy_utils import check_additive_constants
+from .sympy_utils import check_additive_constants
 import pandas as pd
 from dataclasses import dataclass
 from sympy.core.rules import Transform
@@ -36,7 +36,7 @@ from typing import List
 import random
 from torch.distributions.uniform import Uniform
 import random
-
+from ..dclasses import DataModuleParams
 
 def print_sympy(sym_expr):
     print(sym_expr.args)
@@ -65,21 +65,15 @@ class wrapper_dataset(data.Dataset):
         self,
         data,
         env,
-        data_params,
-    ):  # , transforms=None):
-        # df = data.df.reset_index(drop=True)
-        # self.df = df
+        data_params: DataModuleParams
+    ):  
         m = Manager()
-        #self.symbols = np.array(data["Symbol"],dtype=object)
         self.fun = np.array(list(
             map(
                 lambda x: types.FunctionType(x, globals=globals(), name="f"),
                 data["Funcs"],
             )
         ))
-        #self.fun = np.array(data["Funcs"])
-
-        #
         self.tokenized = np.array(data["Tokenized"], dtype=object)
         self.symbols = np.array(data["Symbol"],dtype=object)
         

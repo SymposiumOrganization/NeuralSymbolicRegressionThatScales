@@ -7,28 +7,28 @@ from torch.utils.data import TensorDataset, DataLoader, Dataset
 from torch.utils.data.sampler import SubsetRandomSampler
 import torch.nn.functional as F
 import pytorch_lightning as pl
-from .utils import *
-from dataset import wrapper_dataset
-from data_utils import *
+#from ..utils import 
+from .dataset import wrapper_dataset
+#from .data_utils import 
+from nesymres.dclasses import Params
 
 
 class DataModule(pl.LightningDataModule):
     def __init__(
         self,
-        data_dir1,
-        data_dir2,
-        data_dir3,
-        data_params,
-        batch_size=20,
-        num_of_workers=0,
+        train_dir,
+        val_dir,
+        test_dir,
+        cfg: Params
     ):
         super().__init__()
-        self.data_dir1 = data_dir1
-        self.data_dir2 = data_dir2
-        self.data_dir3 = data_dir3
-        self.batch = batch_size
-        self.data_params = data_params
-        self.num_of_workers = num_of_workers
+        self.data_dir1 = train_dir
+        self.data_dir2 = val_dir
+        self.data_dir3 = test_dir
+        self.batch = cfg.datamodule_params.batch_size
+        self.datamodule_params_train = cfg.datamodule_params_train
+        self.datamodule_params_val = cfg.datamodule_params_val
+        self.num_of_workers = cfg.num_of_workers
 
     def setup(self, stage=None):
         """called one ecah GPU separately - stage defines if we are at fit or test step"""
@@ -40,16 +40,16 @@ class DataModule(pl.LightningDataModule):
             self.training_dataset = wrapper_dataset(
                 data_train,
                 env,
-                self.data_params,
+                self.datamodule_params_train,
             )
             self.validation_dataset = wrapper_dataset(
                 data_val,
                 env,
-                self.data_params,
+                self.datamodule_params_val,
             )
             data_test = load_data(self.data_dir3)
             self.test_dataset = wrapper_dataset(
-                data_test, env, self.data_params
+                data_test, env, self.datamodule_params_train
             )
 
     def train_dataloader(self):

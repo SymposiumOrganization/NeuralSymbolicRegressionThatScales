@@ -52,6 +52,9 @@ class Pipepile:
             except generator.ValueErrorExpression:
                 signal.alarm(0)
                 continue
+            except generator.ImAccomulationBounds:
+                signal.alarm(0)
+                continue
 
         
 
