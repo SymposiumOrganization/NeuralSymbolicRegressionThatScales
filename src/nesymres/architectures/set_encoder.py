@@ -2,27 +2,27 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 from .modules import ISAB, PMA
+from ..dclasses import Architecture
 
 class SetEncoder(pl.LightningModule):
-    def __init__(self, n_l,dim_input,dim_hidden,num_heads,num_inds,ln,num_features,linear,activation,bit16,norm,mean,std,input_normalization):
+    def __init__(self,cfg: Architecture):
         super(SetEncoder, self).__init__()
-        self.linear = linear
-        self.bit16 = bit16
-        assert linear != bit16, "choose either linear or bit16"
-        self.norm = norm
-        if self.norm:
+        #self.linear = linear
+        #self.bit16 = bit16
+        assert cfg.linear != cfg.bit16, "one and only one between linear and bit16 must be true at the same time" 
+        if cfg.norm:
             self.register_buffer("mean", mean)
             self.register_buffer("std", std)
-        self.activation = activation
-        self.input_normalization = input_normalization
-        if linear:
-            self.linearl = nn.Linear(dim_input,16*dim_input)
+        #self.activation = activation
+        #self.input_normalization = input_normalization
+        if cfg.linear:
+            self.linearl = nn.Linear(cfg.dim_input,16*cfg.dim_input)
         self.selfatt = nn.ModuleList()
-        dim_input = 16*dim_input
-        self.selfatt1 = ISAB(dim_input, dim_hidden, num_heads, num_inds, ln=ln)
-        for i in range(n_l):
-            self.selfatt.append(ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln))
-        self.outatt = PMA(dim_hidden, num_heads, num_features, ln=ln)
+        #dim_input = 16*dim_input
+        self.selfatt1 = ISAB(16*cfg.dim_input, dim_hidden, cfg.num_heads, cfg.num_inds, ln=cfg.ln)
+        for i in range(cfg.n_l_enc):
+            self.selfatt.append(ISAB(cfg.dim_hidden, cfg.dim_hidden, cfg.num_heads, cfg.num_inds, ln=cfg.ln))
+        self.outatt = PMA(cfg.dim_hidden, cfg.num_heads, cfg.num_features, ln=cfg.ln)
 
 
     def float2bit(self, f, num_e_bits=5, num_m_bits=10, bias=127., dtype=torch.float32):

@@ -47,7 +47,6 @@ class DatasetParams:
 
 @dataclass
 class DataModuleParams:
-    n_l_enc: int = 4
     max_number_of_points: int = 500
     type_of_sampling_points: str = ["Constant", "Logarithm"][1]
     predict_c: bool = False
@@ -72,6 +71,11 @@ class Architecture:
     norm: bool = True
     linear: bool= False
     input_normalization: bool = False
+    src_pad_idx: int = 0
+    trg_pad_idx: int = 0
+    length_eq: int = 30
+    n_l_enc: int = 4
+
 
 
 @dataclass

@@ -16,11 +16,7 @@ class Model(pl.LightningModule):
     ):
         super().__init__()
 
-
-        self.src_pad_idx = src_pad_idx
-        self.trg_pad_idx = trg_pad_idx
         self.enc = SetEncoder(cfg)
-
         self.tok_embedding = nn.Embedding(cfg.output_dim, cfg.dim_hidden)
         self.pos_embedding = nn.Embedding(cfg.length_eq, cfg.dim_hidden)
         if is_sin_emb:
