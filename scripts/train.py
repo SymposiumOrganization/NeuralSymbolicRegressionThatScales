@@ -19,11 +19,10 @@ seed_everything(9)
 
 def main():
     params = Params()
-    train_path = "data/datasets/20K/20K_train"
+    train_path = "data/datasets/100K/100K_train"
     data = DataModule(
-        env_path="config.json",
         train_path=train_path,
-        val_path="data/datasets/20K/20K_val_subset",
+        val_path="data/datasets/100K/100K_val_subset",
         test_path=None,
         cfg=params
     )

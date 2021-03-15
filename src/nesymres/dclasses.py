@@ -9,6 +9,8 @@ class Equation:
     coeff_dict: dict
     variables: set
     support: tuple = None
+    tokenized: list = None
+    valid: bool = True
 
 @dataclass
 class DataModuleParams:
@@ -27,10 +29,10 @@ class Dataset:
     config: dict
     total_coefficients: list
     total_variables: list
+    word2id: dict
+    id2word: dict
     unique_index: set = None
-
-
-
+    
 @dataclass
 class DatasetParams:
     max_len: int

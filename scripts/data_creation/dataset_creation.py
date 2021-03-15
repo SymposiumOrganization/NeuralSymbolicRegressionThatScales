@@ -112,7 +112,7 @@ def creator(number_of_equations, debug):
     else:
         res = list(map(env_pip.return_training_set, tqdm(range(0, total_number))))
     
-    dataset = dclasses.Dataset(eqs=res, config=config_dict, total_variables=list(env.variables), total_coefficients=env.coefficients)
+    dataset = dclasses.Dataset(eqs=res, config=config_dict, total_variables=list(env.variables), total_coefficients=env.coefficients, word2id=env.word2id, id2word=env.id2word)
     print("Expression generation took {} seconds".format(time.time() - starttime))
     print(
         "Total number of equations created {}".format(

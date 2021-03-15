@@ -19,7 +19,6 @@ from sympy.core.cache import clear_cache
 from sympy.calculus.util import AccumBounds
 from sympy.core.rules import Transform
 from sympy import sympify, Symbol
-from sympy import Float
 from random import random
 from .sympy_utils import (
     remove_root_constant_terms,
@@ -174,10 +173,10 @@ class Generator(object):
                 if x not in ("pow2", "pow3", "pow4", "pow5", "sub", "inv")
             ]
             + digits
-        )  # + self.elements
+        )  
 
 
-        self.id2word = {i: s for i, s in enumerate(self.words, 3)}
+        self.id2word = {i: s for i, s in enumerate(self.words, 4)}
         self.word2id = {s: i for i, s in self.id2word.items()}
         # ADD Start and Finish
         self.word2id["P"] = 0
@@ -185,7 +184,14 @@ class Generator(object):
         self.word2id["F"] = 2
         self.id2word[1] = "S"
         self.id2word[2] = "F"
-        assert len(self.words) == len(set(self.words))
+
+        # ADD Constant Placeholder
+        self.word2id["c"] = 3
+
+        assert len(set(self.word2id.values())) == len(self.word2id.values())
+        assert len(set(self.id2word.values())) == len(self.id2word.values())
+
+        #assert len(self.words) == len(set(self.words))
 
         # number of words / indices
         self.n_words = params.n_words = len(self.words)
@@ -358,29 +364,6 @@ class Generator(object):
         assert len(leaves) == 0
         return stack
     
-
-    def tokenize(self, prefix_expr):
-        tokenized_expr = []
-        tokenized_expr.append(self.word2id["S"])
-        for i in prefix_expr:
-            # try:
-            tokenized_expr.append(self.word2id[i])
-            # except:
-            # breakpoint()
-            # print("Exception with {} in Tokenization".format(prefix_expr))
-            # return None
-        tokenized_expr.append(self.word2id["F"])
-        return tokenized_expr
-
-    def de_tokenize(self, tokenized_expr):
-        prefix_expr = []
-        for i in tokenized_expr:
-            if i == self.word2id["F"]:
-                break
-            else:
-                prefix_expr.append(self.id2word[i])
-        return prefix_expr
-
     def write_infix(self, token, args):
         """
         Infix representation.
@@ -569,28 +552,13 @@ class Generator(object):
             expr = self.rewrite_sympy_expr(expr)
         return expr
 
-    def _sympy_to_prefix(self, op, expr):
+    @classmethod
+    def _sympy_to_prefix(cls, op, expr):
         """
         Parse a SymPy expression given an initial root operator.
         """
         n_args = len(expr.args)
-
-        # derivative operator
-        if op == "derivative":
-            assert n_args >= 2
-            assert all(
-                len(arg) == 2 and str(arg[0]) in self.variables and int(arg[1]) >= 1
-                for arg in expr.args[1:]
-            ), expr.args
-            parse_list = self.sympy_to_prefix(expr.args[0])
-            for var, degree in expr.args[1:]:
-                parse_list = (
-                    ["derivative" for _ in range(int(degree))]
-                    + parse_list
-                    + [str(var) for _ in range(int(degree))]
-                )
-            return parse_list
-
+    
         assert (
             (op == "add" or op == "mul")
             and (n_args >= 2)
@@ -605,18 +573,19 @@ class Generator(object):
             and expr.args[1].p == 1
             and expr.args[1].q == 2
         ):
-            return ["sqrt"] + self.sympy_to_prefix(expr.args[0])
+            return ["sqrt"] + Generator.sympy_to_prefix(expr.args[0])
 
         # parse children
         parse_list = []
         for i in range(n_args):
             if i == 0 or i < n_args - 1:
                 parse_list.append(op)
-            parse_list += self.sympy_to_prefix(expr.args[i])
+            parse_list += Generator.sympy_to_prefix(expr.args[i])
 
         return parse_list
 
-    def sympy_to_prefix(self, expr):
+    @classmethod
+    def sympy_to_prefix(cls,expr):
         """
         Convert a SymPy expression to a prefix one.
         """
@@ -635,38 +604,11 @@ class Generator(object):
         elif expr == sp.I:
             return ["I"]
         # SymPy operator
-        for op_type, op_name in self.SYMPY_OPERATORS.items():
+        for op_type, op_name in cls.SYMPY_OPERATORS.items():
             if isinstance(expr, op_type):
-                return self._sympy_to_prefix(op_name, expr)
+                return cls._sympy_to_prefix(op_name, expr)
         # unknown operator
         raise UnknownSymPyOperator(f"Unknown SymPy operator: {expr}")
-
-    # def reduce_coefficients(self, expr):
-    #     return reduce_coefficients(
-    #         expr, self.variables.values(), self.coefficients.values()
-    #     )
-
-    # def reindex_coefficients(self, expr):
-    #     if self.n_coefficients == 0:
-    #         return expr
-    #     return reindex_coefficients(
-    #         expr, list(self.coefficients.values())[: self.n_coefficients]
-    #     )
-
-    # def extract_non_constant_subtree(self, expr):
-    #     return extract_non_constant_subtree(expr, self.variables.values())
-
-    # def simplify_const_with_coeff(self, expr, coeffs=None):
-    #     if coeffs is None:
-    #         coeffs = self.coefficients.values()
-    #     for coeff in coeffs:
-    #         expr = simplify_const_with_coeff(expr, coeff)
-    #     return expr
-
-    # @timeout(3)
-    # @staticmethod
-    # def count_number_of_constants(format_string):
-    #     return len(re.findall(r"({})", format_string))
 
     def process_equation(self, infix, check_if_valid=True):
         f = self.infix_to_sympy(infix, check_if_valid=check_if_valid)
@@ -717,19 +659,7 @@ class Generator(object):
 
 
 
-    def constants_to_placeholder(self, s):
-        try:
-            sympy_expr = sympify(s)  # self.infix_to_sympy("(" + s + ")")
-            sympy_expr = sympy_expr.xreplace(
-                Transform(
-                    lambda x: Symbol("c", real=True, nonzero=True),
-                    lambda x: isinstance(x, Float),
-                )
-            )
-        except:
-            breakpoint()
-        return sympy_expr
-
+   
 
 
 
