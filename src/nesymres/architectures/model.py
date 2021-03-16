@@ -101,7 +101,7 @@ class Model(pl.LightningModule):
         self.log("train_loss", loss, on_epoch=True)
         return loss
 
-    def validation_step(self, batch, batch_idx, dataloader_idx):
+    def validation_step(self, batch, batch_idx):
         b = batch[0].permute(0, 2, 1)
         size = b.shape[-1]
         src_x = b[:, :, : (size - 1)]
@@ -130,10 +130,10 @@ class Model(pl.LightningModule):
         output = output.permute(1, 0, 2).contiguous().view(-1, output.shape[-1])
         trg = trg[:, 1:].contiguous().view(-1)
         loss = criterion(output, trg)
-        if dataloader_idx == 0:
-            self.log("val_loss", loss, on_epoch=True)
-        else:
-            self.log("val_loss", loss, on_epoch=True)
+        #if dataloader_idx == 0:
+        self.log("val_loss", loss, on_epoch=True)
+        # else:
+        #     self.log("val_loss", loss, on_epoch=True)
 
     def forward(self, x):
         ## standard values

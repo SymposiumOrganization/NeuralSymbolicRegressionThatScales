@@ -14,16 +14,26 @@ from typing import Tuple
 #from nesymres.utils import *
 from nesymres.architectures.model import Model
 from nesymres.architectures.data import DataModule
-from nesymres.dclasses import Params
+from nesymres.dclasses import Params, DataModuleParams
 seed_everything(9)
+from nesymres.utils import load_data
+
 
 def main():
-    params = Params()
     train_path = "data/datasets/100K/100K_train"
+    train_data = load_data(train_path)
+    val_data = load_data("data/datasets/100K/100K_val_subset")
+    test_data = None
+    params = Params(datamodule_params_train=DataModuleParams(
+                                total_variables=list(train_data.total_variables), 
+                                total_coefficients=list(train_data.total_coefficients)),
+                    datamodule_params_val=DataModuleParams(
+                        total_variables=list(val_data.total_variables), 
+                        total_coefficients=list(train_data.total_coefficients)))
     data = DataModule(
-        train_path=train_path,
-        val_path="data/datasets/100K/100K_val_subset",
-        test_path=None,
+        train_data,
+        val_data,
+        None,
         cfg=params
     )
     model = Model(cfg=params.architecture)

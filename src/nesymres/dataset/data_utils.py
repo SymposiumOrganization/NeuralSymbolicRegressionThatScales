@@ -60,16 +60,6 @@ def epoch_time(start_time, end_time):
     elapsed_secs = int(elapsed_time - (elapsed_mins * 60))
     return elapsed_mins, elapsed_secs
 
-
-def return_support(p, type_of_sampling_points):
-    if type_of_sampling_points[0] == "Constant":
-        curr_p = min(p)
-    elif type_of_sampling_points[0] == "Logarithm":
-        curr_p = int(10 ** Uniform(1, math.log10(min(p))).sample())
-    else:
-        raise NameError
-    return curr_p
-
 def evaluate_fun(args):
     fun ,support = args
     if type(fun)==list and not len(fun):

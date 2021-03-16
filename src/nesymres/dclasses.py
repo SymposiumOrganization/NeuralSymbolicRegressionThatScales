@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from types import CodeType
 from typing import List, Tuple
+from torch.distributions import Uniform, Normal, Distribution
 
 @dataclass
 class Equation:
@@ -11,6 +12,7 @@ class Equation:
     support: tuple = None
     tokenized: list = None
     valid: bool = True
+    
 
 @dataclass
 class DataModuleParams:
@@ -50,12 +52,15 @@ class DatasetParams:
 @dataclass
 class DataModuleParams:
     max_number_of_points: int = 500
-    type_of_sampling_points: str = ["Constant", "Logarithm"][1]
+    type_of_sampling_points: str = ["constant", "logarithm"][1]
     predict_c: bool = False
     constant_degree_of_freedom: int = 3
     fun_support: tuple = (-10,10)
-    constant_support: tuple = (-10,10)
-    distribution_support: str = ["Uniform", "Gaussian"][0]
+    additive_constant_support: tuple = (-2,2)
+    multiplicative_constant_support: tuple = (0.1,5)
+    distribution_support: Distribution = [Uniform, Normal][0]
+    total_variables: list = None
+    total_coefficients: list = None
 
 @dataclass
 class Architecture:
