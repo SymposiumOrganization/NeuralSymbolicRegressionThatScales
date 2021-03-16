@@ -45,17 +45,17 @@ def main():
     )
 
     trainer = pl.Trainer(
-        #distributed_backend="ddp",
+        distributed_backend="ddp",
         gpus=-1,
         max_epochs=params.max_epochs,
         val_check_interval=params.val_check_interval,
         callbacks=[checkpoint_callback],
-        precision=params.precision,
+        #precision=params.precision,
     )
     trainer.fit(model, data)
 
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # ,1,2,4,5,6,7" Change Me
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0,2"  # ,1,2,4,5,6,7" Change Me
     #print(f"Starting a run with {config}")
     main()

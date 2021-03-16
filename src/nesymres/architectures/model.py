@@ -16,6 +16,7 @@ class Model(pl.LightningModule):
         super().__init__()
 
         self.enc = SetEncoder(cfg)
+        self.trg_pad_idx = cfg.trg_pad_idx
         self.tok_embedding = nn.Embedding(cfg.output_dim, cfg.dim_hidden)
         self.pos_embedding = nn.Embedding(cfg.length_eq, cfg.dim_hidden)
         if cfg.sinuisodal_embeddings:

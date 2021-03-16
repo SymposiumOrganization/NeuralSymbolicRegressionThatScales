@@ -81,13 +81,13 @@ class Architecture:
     input_normalization: bool = False
     src_pad_idx: int = 0
     trg_pad_idx: int = 0
-    length_eq: int = 30
+    length_eq: int = 40
     n_l_enc: int = 4
     mean: float = 0.5  
     std: float = 0.5 
     dim_input: int = 4
     num_heads: int = 8
-    output_dim: int = 33
+    output_dim: int = 43
     dropout: float = 0
 
 

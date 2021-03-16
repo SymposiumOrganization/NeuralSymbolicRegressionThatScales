@@ -7,15 +7,16 @@ from ..dclasses import Architecture
 class SetEncoder(pl.LightningModule):
     def __init__(self,cfg: Architecture):
         super(SetEncoder, self).__init__()
-        #self.linear = linear
-        #self.bit16 = bit16
+        self.linear = cfg.linear
+        self.bit16 = cfg.bit16
+        self.norm = cfg.norm
         assert cfg.linear != cfg.bit16, "one and only one between linear and bit16 must be true at the same time" 
         if cfg.norm:
             self.register_buffer("mean", torch.tensor(cfg.mean))
             self.register_buffer("std", torch.tensor(cfg.std))
             
-        #self.activation = activation
-        #self.input_normalization = input_normalization
+        self.activation = cfg.activation
+        self.input_normalization = cfg.input_normalization
         if cfg.linear:
             self.linearl = nn.Linear(cfg.dim_input,16*cfg.dim_input)
         self.selfatt = nn.ModuleList()
