@@ -98,7 +98,7 @@ class Params:
     datamodule_params_val: DataModuleParams = DataModuleParams()
     datamodule_params_test: DataModuleParams = DataModuleParams()
     architecture: Architecture = Architecture()
-    num_of_workers: int = 0
+    num_of_workers: int = 32
     max_epochs: int = 200
     val_check_interval: float = 0.05
     precision: int = 16

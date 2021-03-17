@@ -23,17 +23,17 @@ class Model(pl.LightningModule):
             self.create_sinusoidal_embeddings(
                 cfg.length_eq, cfg.dim_hidden, out=self.pos_embedding.weight
             )
-        self.decoder_layer = nn.TransformerDecoderLayer(
+        decoder_layer = nn.TransformerDecoderLayer(
             d_model=cfg.dim_hidden,
             nhead=cfg.num_heads,
             dim_feedforward=cfg.dec_pf_dim,
             dropout=cfg.dropout,
         )
-        self.dec = nn.TransformerDecoder(self.decoder_layer, num_layers=cfg.dec_layers)
+        self.decoder_transfomer = nn.TransformerDecoder(decoder_layer, num_layers=cfg.dec_layers)
         self.fc_out = nn.Linear(cfg.dim_hidden, cfg.output_dim)
-        self.dropout = nn.Dropout(cfg.dropout)
         self.cfg = cfg
-        #self.save_hyperparameters()
+        self.criterion = nn.CrossEntropyLoss(ignore_index=0)
+        self.dropout = nn.Dropout(cfg.dropout)
     
 
     def create_sinusoidal_embeddings(self, n_pos, dim, out):
@@ -69,7 +69,7 @@ class Model(pl.LightningModule):
         )
         return trg_pad_mask, mask
 
-    def training_step(self, batch, batch_idx):
+    def forward_net(self,batch):
         b = batch[0].permute(0, 2, 1)
         size = b.shape[-1]
         src_x = b[:, :, : (size - 1)]
@@ -78,7 +78,7 @@ class Model(pl.LightningModule):
         trg_mask1, trg_mask2 = self.make_trg_mask(trg[:, :-1])
         src_mask = None
         encoder_input = torch.cat((src_x, src_y), dim=-1)
-        enc_src = self.enc(encoder_input)
+        enc_src = self.enc(encoder_input) 
         assert not torch.isnan(enc_src).any()
         pos = self.pos_embedding(
             torch.arange(0, batch[1].shape[1] - 1)
@@ -88,53 +88,32 @@ class Model(pl.LightningModule):
         )
         te = self.tok_embedding(trg[:, :-1])
         trg_ = self.dropout(te + pos)
-        output = self.dec(
+        output = self.decoder_transfomer(
             trg_.permute(1, 0, 2),
             enc_src.permute(1, 0, 2),
             trg_mask2.bool(),
             tgt_key_padding_mask=trg_mask1.bool(),
-        )
+        ) 
         output = self.fc_out(output)
-        criterion = nn.CrossEntropyLoss(ignore_index=0)
+        return output, trg
+
+    def compute_loss(self,output, trg):
         output = output.permute(1, 0, 2).contiguous().view(-1, output.shape[-1])
         trg = trg[:, 1:].contiguous().view(-1)
-        loss = criterion(output, trg)
+        loss = self.criterion(output, trg)
+        return loss
+
+    def training_step(self, batch, _):
+        output, trg = self.forward_net(batch)
+        loss = self.compute_loss(output,trg)
         self.log("train_loss", loss, on_epoch=True)
         return loss
 
-    def validation_step(self, batch, batch_idx):
-        b = batch[0].permute(0, 2, 1)
-        size = b.shape[-1]
-        src_x = b[:, :, : (size - 1)]
-        src_y = b[:, :, -1].unsqueeze(2)
-        trg = batch[1].long()
-        trg_mask1, trg_mask2 = self.make_trg_mask(trg[:, :-1])
-        src_mask = None
-        encoder_input = torch.cat((src_x, src_y), dim=-1)
-        enc_src = self.enc(encoder_input)
-        pos = self.pos_embedding(
-            torch.arange(0, batch[1].shape[1] - 1)
-            .unsqueeze(0)
-            .repeat(batch[1].shape[0], 1)
-            .type_as(trg)
-        )
-        te = self.tok_embedding(trg[:, :-1])
-        trg_ = self.dropout(te + pos)
-        output = self.dec(
-            trg_.permute(1, 0, 2),
-            enc_src.permute(1, 0, 2),
-            trg_mask2.bool(),
-            tgt_key_padding_mask=trg_mask1.bool(),
-        )
-        output = self.fc_out(output)
-        criterion = nn.CrossEntropyLoss(ignore_index=0)
-        output = output.permute(1, 0, 2).contiguous().view(-1, output.shape[-1])
-        trg = trg[:, 1:].contiguous().view(-1)
-        loss = criterion(output, trg)
-        #if dataloader_idx == 0:
+    def validation_step(self, batch, _):
+        output, trg = self.forward_net(batch)
+        loss = self.compute_loss(output,trg)
         self.log("val_loss", loss, on_epoch=True)
-        # else:
-        #     self.log("val_loss", loss, on_epoch=True)
+
 
     def forward(self, x):
         ## standard values

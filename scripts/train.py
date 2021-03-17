@@ -38,7 +38,7 @@ def main():
     )
     model = Model(cfg=params.architecture)
     checkpoint_callback = ModelCheckpoint(
-        monitor="val_loss/dataloader_idx_0",
+        monitor="val_loss", #/dataloader_idx_0",
         dirpath="Exp_weights/",                 
         filename=str(train_path)+"_log_"+"-{epoch:02d}-{val_loss:.2f}",
         mode="min",
@@ -56,6 +56,6 @@ def main():
 
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0,2"  # ,1,2,4,5,6,7" Change Me
+    #os.environ["CUDA_VISIBLE_DEVICES"] = "0,2"  # ,1,2,4,5,6,7" Change Me
     #print(f"Starting a run with {config}")
     main()
