@@ -69,7 +69,7 @@ class Model(pl.LightningModule):
         )
         return trg_pad_mask, mask
 
-    def forward_net(self,batch):
+    def forward(self,batch):
         b = batch[0].permute(0, 2, 1)
         size = b.shape[-1]
         src_x = b[:, :, : (size - 1)]
@@ -105,33 +105,16 @@ class Model(pl.LightningModule):
         return loss
 
     def training_step(self, batch, _):
-        output, trg = self.forward_net(batch)
+        output, trg = self.forward(batch)
         loss = self.compute_loss(output,trg)
         self.log("train_loss", loss, on_epoch=True)
         return loss
 
     def validation_step(self, batch, _):
-        output, trg = self.forward_net(batch)
+        output, trg = self.forward(batch)
         loss = self.compute_loss(output,trg)
         self.log("val_loss", loss, on_epoch=True)
         return loss
-
-
-    def forward(self, x):
-        ## standard values
-        beam_size = 10
-        len1 = 50 
-        _, _, beam = beam_search(
-            self.dec,
-            self.env,
-            len1,
-            beam_size=beam_size,
-            length_penalty=1.0,
-            early_stopping=1,
-            max_len=200,
-        )
-        embedding = self.encoder(x)
-        return embedding
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.cfg.lr)
