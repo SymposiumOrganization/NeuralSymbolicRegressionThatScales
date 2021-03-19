@@ -17,6 +17,9 @@ from nesymres.architectures.data import DataModule
 from nesymres.dclasses import Params, DataModuleParams
 seed_everything(9)
 from nesymres.utils import load_data
+import wandb
+from dataclass_dict_convert import dataclass_dict_convert 
+from pytorch_lightning.loggers import WandbLogger
 
 
 def main():
@@ -37,6 +40,11 @@ def main():
         cfg=params
     )
     model = Model(cfg=params.architecture)
+    breakpoint()
+    wandb.init(config=params.architecture.to_dict(), project="ICML")
+    config = wandb.config
+    wandb_logger = WandbLogger()
+    
     checkpoint_callback = ModelCheckpoint(
         monitor="val_loss", #/dataloader_idx_0",
         dirpath="Exp_weights/",                 
@@ -49,6 +57,7 @@ def main():
         gpus=-1,
         max_epochs=params.max_epochs,
         val_check_interval=params.val_check_interval,
+        logger=wandb_logger,
         callbacks=[checkpoint_callback],
         #precision=params.precision,
     )
@@ -56,6 +65,6 @@ def main():
 
 
 if __name__ == "__main__":
-    #os.environ["CUDA_VISIBLE_DEVICES"] = "0,2"  # ,1,2,4,5,6,7" Change Me
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # ,1,2,4,5,6,7" Change Me
     #print(f"Starting a run with {config}")
     main()
