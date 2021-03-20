@@ -119,8 +119,8 @@ class Model(pl.LightningModule):
         return optimizer
 
 
-    def fit(self, X,y, beam_size, bfgs_ = False):
-        # breakpoint()
+    def fitfunc(self, X,y):
+        
         with torch.no_grad():
             mask = [([torch.sum(X[0,:,i] == 0) for i in range(X.shape[2])][j] == X.shape[1]).numpy() for j in range(X.shape[2])]
             x_bfgs = X.clone()

@@ -29,7 +29,7 @@ def main():
                                 total_coefficients=list(train_data.total_coefficients)),
                     datamodule_params_val=DataModuleParams(
                         total_variables=list(val_data.total_variables), 
-                        total_coefficients=list(train_data.total_coefficients)))
+                        total_coefficients=list(val_data.total_coefficients)))
     data = DataModule(
         train_data,
         val_data,

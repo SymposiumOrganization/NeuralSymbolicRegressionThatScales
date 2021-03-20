@@ -104,3 +104,10 @@ class Params:
     precision: int = 16
     batch_size: int = 450
 
+
+
+@dataclass
+class FitParams:
+    datamodule_params_train: DataModuleParams = DataModuleParams()
+    datamodule_params_val: DataModuleParams = DataModuleParams()
+

@@ -19,38 +19,26 @@ from nesymres.utils import load_data
 
 
 def main():
-    model_path = "Exp_weights/data/datasets/100K"
+    model_path = "Exp_weights/data/datasets/100K/100K_train_log_-epoch=02-val_loss=1.24.ckpt"
     test_data = load_data("data/datasets/100K/100K_val_subset")
-    params = Params(datamodule_params_train=DataModuleParams(
-                                total_variables=list(train_data.total_variables), 
-                                total_coefficients=list(train_data.total_coefficients)),
-                    datamodule_params_val=DataModuleParams(
-                        total_variables=list(val_data.total_variables), 
-                        total_coefficients=list(train_data.total_coefficients)))
+    params = Params(datamodule_params_test=DataModuleParams(
+                                total_variables=list(test_data.total_variables), 
+                                total_coefficients=list(test_data.total_coefficients)),num_of_workers=0)
+
+    params_fit = Params()
     data = DataModule(
-        train_data,
-        val_data,
         None,
+        None,
+        test_data,
         cfg=params
     )
-    model = Model.load_from_checkpoint()
-    model = Model(model_path, cfg=params.architecture)
-    checkpoint_callback = ModelCheckpoint(
-        monitor="val_loss", #/dataloader_idx_0",
-        dirpath="Exp_weights/",                 
-        filename=str(train_path)+"_log_"+"-{epoch:02d}-{val_loss:.2f}",
-        mode="min",
-    )
-
-    trainer = pl.Trainer(
-        distributed_backend="ddp",
-        gpus=-1,
-        max_epochs=params.max_epochs,
-        val_check_interval=params.val_check_interval,
-        callbacks=[checkpoint_callback],
-        #precision=params.precision,
-    )
-    trainer.fit(model, data)
+    data.setup()
+    model = Model.load_from_checkpoint(model_path, cfg=params.architecture)
+    model.eval()
+    model.cuda()
+    for i in data.test_dataloader():
+        X,y = i[0][:,:-1], i[0][:,-1]
+        model.fitfunc(X,y)
 
 
 if __name__ == "__main__":

@@ -234,28 +234,32 @@ class DataModule(pl.LightningDataModule):
         self.batch = cfg.batch_size
         self.datamodule_params_train = cfg.datamodule_params_train
         self.datamodule_params_val = cfg.datamodule_params_val
+        self.datamodule_params_test = cfg.datamodule_params_test
         self.num_of_workers = cfg.num_of_workers
         self.data_train = data_train
         self.data_val = data_val #load_data(self.val_path)
         self.data_test = data_test #load_data(self.test_path)
 
 
-
     def setup(self, stage=None):
         """called one ecah GPU separately - stage defines if we are at fit or test step"""
         # we set up only relevant datasets when stage is specified (automatically set by Pytorch-Lightning)
         if stage == "fit" or stage is None:
-            self.training_dataset = NesymresDataset(
-                self.data_train,
-                self.datamodule_params_train,
-            )
-            self.validation_dataset = NesymresDataset(
-                self.data_val,
-                self.datamodule_params_val,
-            )
+            if self.data_train:
+                self.training_dataset = NesymresDataset(
+                    self.data_train,
+                    self.datamodule_params_train,
+                )
+            
+            if self.data_val:
+                self.validation_dataset = NesymresDataset(
+                    self.data_val,
+                    self.datamodule_params_val,
+                )
+            
             if self.data_test:
                 self.test_dataset = NesymresDataset(
-                    self.data_test, self.datamodule_params_train
+                    self.data_test, self.datamodule_params_test
                 )
 
     def train_dataloader(self):
@@ -282,4 +286,15 @@ class DataModule(pl.LightningDataModule):
             pin_memory=True
         )
 
-        return validloader
+    def test_dataloader(self):
+        """returns validation dataloader"""
+        testloader = torch.utils.data.DataLoader(
+            self.test_dataset,
+            batch_size=1,
+            shuffle=False,
+            collate_fn=partial(custom_collate_fn,cfg= self.datamodule_params_test),
+            num_workers=self.num_of_workers,
+            pin_memory=True
+        )
+
+        return testloader
