@@ -285,6 +285,7 @@ class DataModule(pl.LightningDataModule):
             num_workers=self.num_of_workers,
             pin_memory=True
         )
+        return validloader
 
     def test_dataloader(self):
         """returns validation dataloader"""

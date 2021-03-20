@@ -4,8 +4,14 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, random_split
 import pytorch_lightning as pl
 from .set_encoder import SetEncoder
-#from .beam_search import *
+from .beam_search import BeamHypotheses
 from ..dclasses import Architecture
+import numpy as np
+from tqdm import tqdm 
+from ..dataset.generator import Generator, InvalidPrefixExpression
+from itertools import chain
+from sympy import lambdify 
+from . import bfgs
 
 
 class Model(pl.LightningModule):
@@ -87,7 +93,6 @@ class Model(pl.LightningModule):
             .type_as(trg)
         )
         te = self.tok_embedding(trg[:, :-1])
-        #breakpoint()
         trg_ = self.dropout(te + pos)
         output = self.decoder_transfomer(
             trg_.permute(1, 0, 2),
@@ -114,40 +119,31 @@ class Model(pl.LightningModule):
         output, trg = self.forward(batch)
         loss = self.compute_loss(output,trg)
         self.log("val_loss", loss, on_epoch=True)
-        return loss
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.cfg.lr)
         return optimizer
 
 
-    def fitfunc(self, X,y):
-        
+    def fitfunc(self, X,y, cfg_params=None, cfg_data=None):
         with torch.no_grad():
-            mask = [([torch.sum(X[0,:,i] == 0) for i in range(X.shape[2])][j] == X.shape[1]).numpy() for j in range(X.shape[2])]
-            x_bfgs = X.clone()
-            for i in range(X.shape[2]):
-                if mask[i] == True:
-                    x_bfgs[:,:,i] = X[:,:,i]+1
-            encoder_input = torch.cat((X, y), dim=-1)
-            bfgs_input = torch.cat((x_bfgs, y), dim=-1)
+
+            encoder_input = torch.cat((X, y), dim=1).permute(0, 2, 1)
+            
+            if self.device.type == "cuda":
+                encoder_input = encoder_input.cuda()
             enc_src = self.enc(encoder_input)
             src_enc = enc_src
-            bs = 1
-            enc_src = (
-                src_enc.unsqueeze(1)
-                .expand((bs, beam_size) + src_enc.shape[1:])
-                .contiguous()
-                .view((bs * beam_size,) + src_enc.shape[1:])
-            )
+            shape_enc_src = (cfg_params.beam_size,) + src_enc.shape[1:]
+            enc_src = src_enc.unsqueeze(1).expand((1, cfg_params.beam_size) + src_enc.shape[1:]).contiguous().view(shape_enc_src)
             print(
                 "Memory footprint of the encoder: {}GB \n".format(
                     enc_src.element_size() * enc_src.nelement() / 10 ** (9)
                 )
             )
-            assert enc_src.size(0) == bs * beam_size
+            assert enc_src.size(0) == cfg_params.beam_size
             generated = torch.zeros(
-                [bs * beam_size, self.length_eq],
+                [cfg_params.beam_size, self.cfg.length_eq],
                 dtype=torch.long,
                 device=self.device,
             )
@@ -155,21 +151,15 @@ class Model(pl.LightningModule):
             # trg_indexes = [[1] for i in range(bs*self.beam_size)]
             cache = {"slen": 0}
             # generated = torch.tensor(trg_indexes,device=self.device,dtype=torch.long)
-            generated_hyps = [
-                BeamHypotheses(beam_size, self.length_eq, 1.0, 1)
-                for _ in range(bs)
-            ]
-            done = [False for _ in range(bs)]
-
+            generated_hyps = BeamHypotheses(cfg_params.beam_size, self.cfg.length_eq, 1.0, 1)
+            done = False 
             # Beam Scores
-            beam_scores = torch.zeros(
-                (bs, beam_size), device=self.device, dtype=torch.long
-            )
-            beam_scores[:, 1:] = -1e9
-            beam_scores = beam_scores.view(-1)
+            beam_scores = torch.zeros(cfg_params.beam_size, device=self.device, dtype=torch.long)
+            beam_scores[1:] = -1e9
+            #beam_scores = beam_scores.view(-1)
 
             cur_len = torch.tensor(1, device=self.device, dtype=torch.int64)
-            while cur_len < self.length_eq:
+            while cur_len < self.cfg.length_eq:
                 # breakpoint()
                 generated_mask1, generated_mask2 = self.make_trg_mask(
                     generated[:, :cur_len]
@@ -186,7 +176,7 @@ class Model(pl.LightningModule):
                 te = self.tok_embedding(generated[:, :cur_len])
                 trg_ = self.dropout(te + pos)
 
-                output = self.dec(
+                output = self.decoder_transfomer(
                     trg_.permute(1, 0, 2),
                     enc_src.permute(1, 0, 2),
                     generated_mask2.float(),
@@ -196,103 +186,75 @@ class Model(pl.LightningModule):
                 output = output.permute(1, 0, 2).contiguous()
                 scores = F.log_softmax(output[:, -1:, :], dim=-1).squeeze(
                     1
-                )  # To Control
-                assert output[:, -1:, :].shape == (
-                    bs * beam_size,
-                    1,
-                    self.length_eq,
-                )
+                ) 
+                
+                assert output[:, -1:, :].shape == (cfg_params.beam_size,1,self.cfg.length_eq,)
 
                 n_words = scores.shape[-1]
                 # select next words with scores
                 _scores = scores + beam_scores[:, None].expand_as(
                     scores
                 )  # (bs * beam_size, n_words)
-                _scores = _scores.view(
-                    bs, beam_size * n_words
-                )  # (bs, beam_size * n_words)
+                _scores = _scores.view(cfg_params.beam_size * n_words)  # (bs, beam_size * n_words)
 
-                next_scores, next_words = torch.topk(
-                    _scores, 2 * beam_size, dim=1, largest=True, sorted=True
-                )
+                next_scores, next_words = torch.topk(_scores, 2 * cfg_params.beam_size, dim=0, largest=True, sorted=True)
+                assert len(next_scores) == len(next_words) == 2 * cfg_params.beam_size
+                done = done or generated_hyps.is_done(next_scores.max().item())
+                next_sent_beam = []
+
+                # next words for this sentence
+                for idx, value in zip(next_words, next_scores):
+
+                    # get beam and word IDs
+                    beam_id = idx // n_words
+                    word_id = idx % n_words
+
+                    # end of sentence, or next word
+                    if (
+                        word_id == cfg_params.word2id["F"]
+                        or cur_len + 1 == self.cfg.length_eq
+                    ):
+                        generated_hyps.add(
+                            generated[
+                                 beam_id,
+                                :cur_len,
+                            ]
+                            .clone()
+                            .cpu(),
+                            value.item(),
+                        )
+                    else:
+                        next_sent_beam.append(
+                            (value, word_id, beam_id)
+                        )
+
+                    # the beam for next step is full
+                    if len(next_sent_beam) == cfg_params.beam_size:
+                        break
+
+                # update next beam content
                 assert (
-                    next_scores.size() == next_words.size() == (bs, 2 * beam_size)
+                    len(next_sent_beam) == 0
+                    if cur_len + 1 == self.cfg.length_eq
+                    else cfg_params.beam_size
                 )
+                if len(next_sent_beam) == 0:
+                    next_sent_beam = [
+                        (0, self.trg_pad_idx, 0)
+                    ] * cfg_params.beam_size  # pad the batch
 
-                # next batch beam content
-                # list of (bs * beam_size) tuple(next hypothesis score, next word, current position in the batch)
-                next_batch_beam = []
 
-                # for each sentence
-                for sent_id in range(bs):
+                #next_batch_beam.extend(next_sent_beam)
+                assert len(next_sent_beam) == cfg_params.beam_size
 
-                    # if we are done with this sentence
-                    done[sent_id] = done[sent_id] or generated_hyps[sent_id].is_done(
-                        next_scores[sent_id].max().item()
-                    )
-                    if done[sent_id]:
-                        next_batch_beam.extend(
-                            [(0, self.trg_pad_idx, 0)] * beam_size
-                        )  # pad the batch
-                        continue
-
-                    # next sentence beam content
-                    next_sent_beam = []
-
-                    # next words for this sentence
-                    for idx, value in zip(next_words[sent_id], next_scores[sent_id]):
-
-                        # get beam and word IDs
-                        beam_id = idx // n_words
-                        word_id = idx % n_words
-
-                        # end of sentence, or next word
-                        if (
-                            word_id == self.env.word2id["F"]
-                            or cur_len + 1 == self.length_eq
-                        ):
-                            generated_hyps[sent_id].add(
-                                generated[
-                                    sent_id * beam_size + beam_id,
-                                    :cur_len,
-                                ]
-                                .clone()
-                                .cpu(),
-                                value.item(),
-                            )
-                        else:
-                            next_sent_beam.append(
-                                (value, word_id, sent_id * beam_size + beam_id)
-                            )
-
-                        # the beam for next step is full
-                        if len(next_sent_beam) == beam_size:
-                            break
-
-                    # update next beam content
-                    assert (
-                        len(next_sent_beam) == 0
-                        if cur_len + 1 == self.length_eq
-                        else beam_size
-                    )
-                    if len(next_sent_beam) == 0:
-                        next_sent_beam = [
-                            (0, self.trg_pad_idx, 0)
-                        ] * beam_size  # pad the batch
-                    next_batch_beam.extend(next_sent_beam)
-                    assert len(next_batch_beam) == beam_size * (sent_id + 1)
-
-                # sanity check / prepare next batch
-                assert len(next_batch_beam) == bs * beam_size
-                # breakpoint()
                 beam_scores = torch.tensor(
-                    [x[0] for x in next_batch_beam], device=self.device
+                    [x[0] for x in next_sent_beam], device=self.device
                 )  # .type(torch.int64) Maybe #beam_scores.new_tensor([x[0] for x in next_batch_beam])
                 beam_words = torch.tensor(
-                    [x[1] for x in next_batch_beam], device=self.device
+                    [x[1] for x in next_sent_beam], device=self.device
                 )  # generated.new([x[1] for x in next_batch_beam])
                 beam_idx = torch.tensor(
-                    [x[2] for x in next_batch_beam], device=self.device
+                    [x[2] for x in next_sent_beam], device=self.device
                 )
                 generated = generated[beam_idx, :]
                 generated[:, cur_len] = beam_words
@@ -305,80 +267,58 @@ class Model(pl.LightningModule):
                     1, device=self.device, dtype=torch.int64
                 )
 
-            # def get_coeffs(s):
-            #     roots = [int(s[i + 2]) for i, c in enumerate(s) if c == 'x']
-            #     poly = np.poly1d(roots, r=True)
-            #     coeffs = list(poly.coefficients.astype(np.int64))
-            #     return [c % 10 for c in coeffs], coeffs
 
-            # visualize hypotheses
-            #print([len(x) for x in generated_hyps], cur_len)
-            globals().update(locals())
-            #!import code; code.interact(local=vars())
-            supp1 = np.random.uniform(1, 3, [X.shape[2], 100])
-            supp2 = np.ones([1, X.shape[1]])
-            supp = np.concatenate([X[0].T.numpy(), supp2], axis=0)
             perc = 0
             cnt = 0
-            gts = []
+            #gts = []
             best_preds = []
             best_preds_bfgs = []
             best_L = []
             best_L_bfgs = []
-            for ii in tqdm(range(bs)):
-                numbers_gt = y[ii]
-                idx_nan_trg = np.where(np.isnan(numbers_gt))[0]
-                idx_inf_trg = np.where(np.abs(numbers_gt) == np.inf)[0]
-                idx_trg = np.unique(np.concatenate([idx_nan_trg, idx_inf_trg]))
+            #for ii in tqdm(range(bs)):
 
-                cnt = cnt + 1
-                flag = 0
-                L = []
-                L_bfgs = []
-                P = []
-                P_bfgs = []
-                counter = 1
-                for ss, ww in sorted(
-                    generated_hyps[ii].hyp, key=lambda x: x[0], reverse=True
-                ):
-                    try:
-                        ww = ww[1:].tolist()
-                        ww = [x if x<14 else x+1 for x in ww]
-                        pre = self.env._prefix_to_infix_benchmark(
-                            self.env.de_tokenize(ww)
-                        )
-                        P.append(pre)
-                        print('hypothesis #', counter, ': ',pre[0])
-                        numbers_pred = lambdify("x,y,z,c", pre[0])(*supp)
-                        idx_nan_pred = np.where(np.isnan(numbers_pred))[0]
-                        idx_inf_pred = np.where(np.abs(numbers_pred) == np.inf)[0]
-                        idx_pred = np.unique(
-                            np.concatenate([idx_nan_pred, idx_inf_pred])
-                        )
-                        idx_nan = np.unique(np.concatenate([idx_pred, idx_trg]))
-                        iii = np.setdiff1d(np.arange(0, X.shape[1]), idx_nan)
-                        loss = np.mean(np.square(numbers_gt[iii].squeeze().numpy() - numbers_pred[iii]))
-                        # print(loss)
-                        L.append(np.abs(loss))
-                        # try:
+            #numbers_gt = y.squeeze() #y[ii]
+            # idx_nan_trg = np.where(np.isnan(y.squeeze()))[0]
+            # idx_inf_trg = np.where(np.abs(y.squeeze()) == np.inf)[0]
+            # idx_trg = np.unique(np.concatenate([idx_nan_trg, idx_inf_trg]))
 
-                        if bfgs_:
-                            pred_w_c, constants, loss_bfgs, exa = bfgs(
-                                pre[0], bfgs_input[ii], 10, self.env
-                            )
-                            L_bfgs.append(loss_bfgs)
-                            P_bfgs.append(str(pred_w_c))
+            #cnt = cnt + 1
+            flag = 0
+            L = []
+            L_bfgs = []
+            #P = []
+            P_bfgs = []
+            counter = 1
 
-                        # except:
-                        #    print('not yet implemented')
-                        #    continue
-                        # hh = " ".join(self.env.id2word[x] for x in ww.tolist())
+            fun_args = ",".join(chain(cfg_data.datamodule_params_test.total_variables,"constant"))
+            cfg_params.id2word[3] = "constant"
+            for __, ww in sorted(
+                generated_hyps.hyp, key=lambda x: x[0], reverse=True
+            ):
+                # ww = [x if x<14 else x+1 for x in ww]
+                # numbers_pred = lambdify(fun_args, pre)(*X)
+                # idx_nan_pred = np.where(np.isnan(numbers_pred))[0]
+                # idx_inf_pred = np.where(np.abs(numbers_pred) == np.inf)[0]
+                # idx_pred = np.unique(
+                #     np.concatenate([idx_nan_pred, idx_inf_pred])
+                # )
+                # idx_nan = np.unique(np.concatenate([idx_pred, idx_trg]))
+                # iii = np.setdiff1d(np.arange(0, X.shape[1]), idx_nan)
+                # loss = np.mean(np.square(numbers_gt[iii].squeeze().numpy() - numbers_pred[iii]))
+                # # print(loss)
+                # L.append(np.abs(loss))
+                # try:
+                #if bfgs_:
+                    
+                try:
+                    pred_w_c, constants, loss_bfgs, exa = bfgs.bfgs(
+                        ww, X, cfg_params.bfgs
+                    )
+                except InvalidPrefixExpression:
+                    continue
+                L_bfgs = loss_bfgs
+                P_bfgs.append(str(pred_w_c))
 
-                    except:
-                        print("Math Syntax Error")
-                        pass
-
-                    counter = counter +1
                     # cc = get_coeffs(hh[4:])
                     # print(f"{ss:+.4f} {hh} || {cc[0]} || {cc[1]}")
                 # if flag == 0:
@@ -390,9 +330,7 @@ class Model(pl.LightningModule):
                 if bfgs_:
                     best_preds_bfgs.append(P_bfgs[np.nanargmin(L_bfgs)])
                     best_L_bfgs.append(np.nanmin(L_bfgs))
-                # FF.append(flag)
-            # breakpoint()
-            # select the best hypotheses
+
             tgt_len = torch.zeros(bs, device=self.device)  # src_len.new(bs)
             best = []
 

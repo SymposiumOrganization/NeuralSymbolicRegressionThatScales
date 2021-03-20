@@ -3,7 +3,6 @@ import numpy as np
 import random
 import math
 from torch.utils.data import TensorDataset, DataLoader,Dataset
-from eq_learner import utils
 from scipy.optimize import minimize
 import types
 import click
@@ -18,10 +17,12 @@ from torch import nn
 import torch.nn.functional as F
 from sympy import *
 from dataclasses import dataclass
+from ..dataset.generator import Generator
 from typing import Tuple
 import time
 import re
-
+from ..datasetsympy_utils import add_multiplicative_constants, add_additive_constants
+    
 
 
 class TimedFun:
@@ -40,19 +41,33 @@ class TimedFun:
         return self.fun_value
 
 
-def bfgs(pred_str, input_batch, n_restarts, env, NMSE=True, idx_remove =True, normalization_o= False):
-    #use different constant symbols to treat each variable separately
-    c=0
-    expre = list(pred_str)
-    for j,i in enumerate(list(pred_str)[:-1]):
-        if i == 'c' and list(pred_str)[j-1] == '(' and list(pred_str)[j+1] == ')':    ##### Check later
-            expre[j] = 'c{}'.format(str(c))
-            c=c+1
-    example = "".join(list(expre))  
+def bfgs(pred_str, X, cfg):#n_restarts, env, NMSE=True, idx_remove =True, normalization_o= False):
+    #Check where dimensions not use, and replace them with 1.
+    X = X.clone()
+    bool_dim = (X==0).all(axis=2).squeeze()
+    X[:,bool_dim,:] = 1
+    # first_mask_step = [torch.sum(X[0,:,i] == 0) for i in range(X.shape[2])]
+    # mask = [(first_mask_step[j] == X.shape[1]).numpy() for j in range(X.shape[2])]
+    # x_bfgs = X.clone()
+    # for i in range(X.shape[2]):
+    #     if mask[i] == True:
+    #         x_bfgs[:,:,i] = X[:,:,i]+1 #BFGS wants 1 for a non existing variable 
+    # bfgs_input = torch.cat((x_bfgs, y), dim=1)
+    pred_str = ww[1:].tolist()
+    pred_str = [x if x<14 else x+1 for x in pred_str]
+    prefix = data.de_tokenize(pred_str, cfg_params.id2word)
     
-    
-    if 'c0' not in example:                                                           ##### make a flag
+    if "constant" in prefix:
+        for j,i in enumerate(list(pred_str)[:-1]):
+            if i == "constant":    
+                expre[j] = 'c{}'.format(str(c))
+                c=c+1
+        example = "".join(list(expre))  
+
+    elif cfg.add_coefficients_if_not_existing and 'constant' not in prefix:           
         print("No constants in predicted expression. Attaching them everywhere")
+        f = add_multiplicative_constants(f, sp.Symbol("cm", real=True, nonzero=True), unary_operators=Generator.una_ops)
+        f = add_additive_constants(f, self.placeholders, unary_operators=Generator.una_ops)
         temp = env.sympy_to_prefix(sympify(pred_str))
         temp2 = env._prefix_to_infix_with_constants(temp)[0]
         num = env.count_number_of_constants(temp2)
@@ -71,7 +86,14 @@ def bfgs(pred_str, input_batch, n_restarts, env, NMSE=True, idx_remove =True, no
                     expre[j] = 'c{}'.format(str(c))
                     c=c+1        
         example = "".join(list(expre))
+
+    else:
+        raise NotImplementedError
+
     
+    candidate = Generator.prefix_to_infix(data.de_tokenize(pred_str, cfg_params.id2word), 
+                                    coefficients=["cfg_data.datamodule_params_test.total_coefficients"], 
+                                    variables=cfg_data.datamodule_params_test.total_variables)
     print('Constructing BFGS loss...')
     #construct loss function
     x = Symbol('x')

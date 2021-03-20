@@ -559,33 +559,6 @@ if __name__ == "__main__":
     # re-index coefficients
     #
 
-    def test_reindex_coefficients(infix, ref_output):
-        expr = parse_expr(infix, local_dict=local_dict)
-        ref_output = parse_expr(ref_output, local_dict=local_dict)
-        output = reindex_coefficients(expr, [local_dict[f"a{i}"] for i in range(10)])
-        if output != ref_output:
-            print(
-                f"Error when re-indexing coefficients on expression {infix} - Expected: {ref_output} - Returned: {output}"
-            )
-            return False
-        return True
-
-    tests = [
-        ("a0", "a0"),
-        ("a1", "a0"),
-        ("a5", "a0"),
-        ("a9", "a0"),
-        ("a0 + a8", "a0 + a1"),
-        ("a1 + a2", "a0 + a1"),
-        ("a5 + a8", "a0 + a1"),
-        ("a0 * exp(a8)", "a0 * exp(a1)"),
-        ("a4 * exp(a8)", "a0 * exp(a1)"),
-        ("a8 * exp(a4)", "a1 * exp(a0)"),
-        ("(1 + cos(a2)) / ln(a1)", "(1 + cos(a1)) / ln(a0)"),
-    ]
-
-    for test in tests:
-        failed += not test_reindex_coefficients(*test)
 
     #
     # reduce coefficients

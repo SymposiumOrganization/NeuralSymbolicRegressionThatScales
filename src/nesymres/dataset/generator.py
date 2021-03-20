@@ -50,6 +50,8 @@ class ValueErrorExpression(Exception):
 class ImAccomulationBounds(Exception):
     pass
 
+class InvalidPrefixExpression(Exception):
+    pass
 
 class Generator(object):
 
@@ -112,7 +114,8 @@ class Generator(object):
         "tanh": 1,
         "coth": 1,
     }
-
+    operators = sorted(list(OPERATORS.keys()))
+    constants = ["pi", "E"]
     def __init__(self, params):
         self.max_ops = params.max_ops
         self.max_len = params.max_len
@@ -120,7 +123,7 @@ class Generator(object):
 
 
         # parse operators with their weights
-        self.operators = sorted(list(self.OPERATORS.keys()))
+        
         ops = params.operators.split(",")
         ops = sorted([x.split(":") for x in ops])
         assert len(ops) >= 1 and all(o in self.OPERATORS for o, _ in ops)
@@ -143,7 +146,6 @@ class Generator(object):
         assert len(self.all_ops) == len(self.una_ops) + len(self.bin_ops)
 
         # symbols / elements
-        self.constants = ["pi", "E"]
         self.variables = OrderedDict({})
         for var in params.variables: 
             self.variables[str(var)] =sp.Symbol(str(var), real=True, nonzero=True)
@@ -153,7 +155,8 @@ class Generator(object):
         self.placeholders["cm"] = sp.Symbol("cm", real=True, nonzero=True)
         self.placeholders["ca"] = sp.Symbol("ca",real=True, nonzero=True)
         assert 1 <= len(self.variables)
-        self.coefficients = [f"{x}_{i}" for x in self.placeholders.keys() for i in range(2*params.max_len)] # We do not no a priori how many coefficients an expression has, so to be on the same side we equal to two times the maximum number of expressions
+        # We do not no a priori how many coefficients an expression has, so to be on the same side we equal to two times the maximum number of expressions
+        self.coefficients = [f"{x}_{i}" for x in self.placeholders.keys() for i in range(2*params.max_len)] 
         assert all(v in self.OPERATORS for v in self.SYMPY_OPERATORS.values())
 
         # SymPy elements
@@ -187,6 +190,7 @@ class Generator(object):
 
         # ADD Constant Placeholder
         self.word2id["c"] = 3
+        self.id2word[3] = "c"
 
         assert len(set(self.word2id.values())) == len(self.word2id.values())
         assert len(set(self.id2word.values())) == len(self.id2word.values())
@@ -364,7 +368,8 @@ class Generator(object):
         assert len(leaves) == 0
         return stack
     
-    def write_infix(self, token, args):
+    @classmethod
+    def write_infix(cls, token, args):
         """
         Infix representation.
         Convert prefix expressions to a format that SymPy can parse.
@@ -464,8 +469,8 @@ class Generator(object):
 
     # def sign(self, x):
     #     return ("", "-")[x < 0]
-
-    def _prefix_to_infix(self, expr):
+    @classmethod
+    def _prefix_to_infix(cls, expr, coefficients=None, variables=None):
         """
         Parse an expression in prefix mode, and output it in either:
           - infix mode (returns human readable string)
@@ -474,18 +479,18 @@ class Generator(object):
         if len(expr) == 0:
             raise InvalidPrefixExpression("Empty prefix list.")
         t = expr[0]
-        if t in self.operators:
+        if t in cls.operators:
             args = []
             l1 = expr[1:]
-            for _ in range(self.OPERATORS[t]):  # Arity
-                i1, l1 = self._prefix_to_infix(l1)
+            for _ in range(cls.OPERATORS[t]):  # Arity
+                i1, l1 = cls._prefix_to_infix(l1,  coefficients=coefficients, variables=variables)
                 args.append(i1)
-            return self.write_infix(t, args), l1
-        elif t in self.coefficients:
+            return cls.write_infix(t, args), l1
+        elif t in coefficients:
             return "{" + t + "}", expr[1:]
         elif (
-            t in self.variables
-            or t in self.constants
+            t in variables
+            or t in cls.constants
             or t == "I"
         ):
             return t, expr[1:]
@@ -507,11 +512,12 @@ class Generator(object):
         return edges, li
 
 
-    def prefix_to_infix(self, expr):
+    @classmethod
+    def prefix_to_infix(cls, expr, coefficients=None, variables=None):
         """
         Prefix to infix conversion.
         """
-        p, r = self._prefix_to_infix(expr)
+        p, r = cls._prefix_to_infix(expr, coefficients=coefficients, variables=variables)
         if len(r) > 0:
             raise InvalidPrefixExpression(
                 f'Incorrect prefix expression "{expr}". "{r}" was not parsed.'
@@ -638,7 +644,7 @@ class Generator(object):
         nb_ops = rng.randint(3, self.max_ops + 1)
         f_expr = self._generate_expr(nb_ops, rng, max_int=1)
 
-        infix = self.prefix_to_infix(f_expr)
+        infix = self.prefix_to_infix(f_exp, coefficients=self.coefficients, variables=self.variables)
         f = self.process_equation(infix)
         f_prefix = self.sympy_to_prefix(f)
         # skip too long sequences

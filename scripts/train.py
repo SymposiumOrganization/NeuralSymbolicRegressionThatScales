@@ -27,23 +27,27 @@ def main():
     train_data = load_data(train_path)
     val_data = load_data("data/datasets/100K/100K_val_subset")
     test_data = None
-    params = Params(datamodule_params_train=DataModuleParams(
+    wandb = None
+    data_params = Params(datamodule_params_train=DataModuleParams(
                                 total_variables=list(train_data.total_variables), 
                                 total_coefficients=list(train_data.total_coefficients)),
                     datamodule_params_val=DataModuleParams(
                         total_variables=list(val_data.total_variables), 
                         total_coefficients=list(val_data.total_coefficients)))
+    architecture_params = Params()
     data = DataModule(
         train_data,
         val_data,
         None,
-        cfg=params
+        cfg=data_params
     )
     model = Model(cfg=params.architecture)
-    breakpoint()
-    wandb.init(config=params.architecture.to_dict(), project="ICML")
-    config = wandb.config
-    wandb_logger = WandbLogger()
+    if wandb:
+        wandb.init(config=params.architecture.to_dict(), project="ICML")
+        config = wandb.config
+        wandb_logger = WandbLogger()
+    else:
+        wandb_logger = None
     
     checkpoint_callback = ModelCheckpoint(
         monitor="val_loss", #/dataloader_idx_0",

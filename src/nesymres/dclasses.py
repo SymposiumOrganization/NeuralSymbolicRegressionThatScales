@@ -35,6 +35,7 @@ class Dataset:
     word2id: dict
     id2word: dict
     unique_index: set = None
+  
     
 @dataclass
 class DatasetParams:
@@ -68,7 +69,7 @@ class DataModuleParams:
 class Architecture:
     sinuisodal_embeddings: bool = False
     dec_pf_dim: int = 512
-    dec_layers: int = 2 
+    dec_layers: int = 2
     dim_hidden: int = 512  
     lr: int = 0.0001
     dropout: int = 0
@@ -99,7 +100,6 @@ class Params:
     datamodule_params_train: DataModuleParams = DataModuleParams()
     datamodule_params_val: DataModuleParams = DataModuleParams()
     datamodule_params_test: DataModuleParams = DataModuleParams()
-    architecture: Architecture = Architecture()
     num_of_workers: int = 32
     max_epochs: int = 200
     val_check_interval: float = 0.2
@@ -107,9 +107,18 @@ class Params:
     batch_size: int = 100
 
 
+@dataclass
+class BFGSParams:
+    on: bool = True
+    n_restarts: bool = 10
+    add_coefficients_if_not_existing: bool = True
+    normalization_o: bool = False
+    
 
 @dataclass
 class FitParams:
-    datamodule_params_train: DataModuleParams = DataModuleParams()
-    datamodule_params_val: DataModuleParams = DataModuleParams()
-
+    word2id: dict
+    id2word: dict
+    bfgs: BFGSParams = BFGSParams()
+    beam_size: int = 100
+    
