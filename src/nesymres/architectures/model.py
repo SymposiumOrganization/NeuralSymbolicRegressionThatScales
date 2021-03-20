@@ -125,7 +125,7 @@ class Model(pl.LightningModule):
         return optimizer
 
 
-    def fitfunc(self, X,y, cfg_params=None, cfg_data=None):
+    def fitfunc(self, X,y, cfg_params=None):
         with torch.no_grad():
 
             encoder_input = torch.cat((X, y), dim=1).permute(0, 2, 1)
@@ -290,7 +290,7 @@ class Model(pl.LightningModule):
             P_bfgs = []
             counter = 1
 
-            fun_args = ",".join(chain(cfg_data.datamodule_params_test.total_variables,"constant"))
+            fun_args = ",".join(chain(cfg_params.total_variables,"constant"))
             cfg_params.id2word[3] = "constant"
             for __, ww in sorted(
                 generated_hyps.hyp, key=lambda x: x[0], reverse=True
@@ -309,10 +309,9 @@ class Model(pl.LightningModule):
                 # L.append(np.abs(loss))
                 # try:
                 #if bfgs_:
-                    
                 try:
                     pred_w_c, constants, loss_bfgs, exa = bfgs.bfgs(
-                        ww, X, cfg_params.bfgs
+                        ww, X, cfg_params
                     )
                 except InvalidPrefixExpression:
                     continue

@@ -12,20 +12,20 @@ from pytorch_lightning import Trainer, seed_everything
 from typing import Tuple
 from nesymres.architectures.model import Model
 from nesymres.architectures.data import DataModule
-from nesymres.dclasses import Params, DataModuleParams, FitParams, Architecture
+from nesymres.dclasses import Params, DataModuleParams, FitParams, ArchitectureParams
 from nesymres.utils import load_data
 from functools import partial
 
 
 def main():
-    model_path = "Exp_weights/data/datasets/100K/100K_train_log_-epoch=06-val_loss=1.19.ckpt"
+    model_path = "Exp_weights/data/datasets/100K/100K_train_log_-epoch=25-val_loss=1.04.ckpt"
     test_data = load_data("data/datasets/100K/100K_val_subset")
     data_params = Params(datamodule_params_test=DataModuleParams(
                                 total_variables=list(test_data.total_variables), 
                                 total_coefficients=list(test_data.total_coefficients)),num_of_workers=0)
 
-    architecture_params = Architecture()
-    params_fit = FitParams(word2id=test_data.word2id, id2word=test_data.id2word)
+    architecture_params = ArchitectureParams()
+    params_fit = FitParams(word2id=test_data.word2id, id2word=test_data.id2word, una_ops=test_data.una_ops, bin_ops=test_data.bin_ops, total_variables=list(test_data.total_variables),  total_coefficients=list(test_data.total_coefficients))
     data = DataModule(
         None,
         None,
@@ -36,7 +36,7 @@ def main():
     model = Model.load_from_checkpoint(model_path, cfg=architecture_params)
     model.eval()
     model.cuda()
-    fitfunc = partial(model.fitfunc,cfg_params=params_fit,cfg_data=data_params)
+    fitfunc = partial(model.fitfunc,cfg_params=params_fit)
 
     for i in data.test_dataloader():
         X,y = i[0][:,:-1], i[0][:,-1:]

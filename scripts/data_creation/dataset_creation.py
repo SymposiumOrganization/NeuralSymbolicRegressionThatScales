@@ -119,7 +119,8 @@ def creator(number_of_equations, debug):
                                word2id=env.word2id, 
                                id2word=env.id2word,
                                una_ops=env.una_ops,
-                               bin_ops=env.una_ops)
+                               bin_ops=env.una_ops,
+                               rewrite_functions=env.rewrite_functions)
     print("Expression generation took {} seconds".format(time.time() - starttime))
     print(
         "Total number of equations created {}".format(

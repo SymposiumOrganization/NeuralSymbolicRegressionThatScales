@@ -116,7 +116,8 @@ def main(eqs_for_validation, data_path):
                                         word2id=data.word2id, 
                                         id2word=data.id2word,
                                         una_ops=data.una_ops,
-                                        bin_ops=data.bin_ops)
+                                        bin_ops=data.bin_ops,
+                                        rewrite_functions=data.rewrite_functions)
     val_eqs = [data.eqs[x] for x in validation_indeces]
     validation_dataset = dclasses.Dataset(eqs=val_eqs, 
                                         config=data.config, 
@@ -125,7 +126,8 @@ def main(eqs_for_validation, data_path):
                                         word2id=data.word2id, 
                                         id2word=data.id2word,
                                         una_ops=data.una_ops,
-                                        bin_ops=data.bin_ops)
+                                        bin_ops=data.bin_ops,
+                                        rewrite_functions=data.rewrite_functions)
 
     t = [x.expr for x in training_dataset.eqs]
     t_n = [x for x in training_indeces if disjoint_sets[x]]

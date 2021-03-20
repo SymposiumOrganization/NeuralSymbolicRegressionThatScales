@@ -36,7 +36,9 @@ class Dataset:
     id2word: dict
     una_ops: list
     bin_ops: list
+    rewrite_functions: list 
     unique_index: set = None
+    
     
     
 @dataclass
@@ -65,6 +67,7 @@ class DataModuleParams:
     distribution_support: Distribution = [Uniform, Normal][0]
     total_variables: list = None
     total_coefficients: list = None
+
 
 @dataclass_dict_convert()
 @dataclass(frozen=True)
@@ -109,6 +112,7 @@ class Params:
     batch_size: int = 100
 
 
+
 @dataclass
 class BFGSParams:
     on: bool = True
@@ -121,6 +125,11 @@ class BFGSParams:
 class FitParams:
     word2id: dict
     id2word: dict
+    total_coefficients: list
+    total_variables: list
+    rewrite_functions: list
+    una_ops: list = None
+    bin_ops: list = None
     bfgs: BFGSParams = BFGSParams()
     beam_size: int = 100
     

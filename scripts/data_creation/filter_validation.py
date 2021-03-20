@@ -54,7 +54,8 @@ def main(val_path,num_target_eq):
                                 word2id=data_val.word2id, 
                                 id2word=data_val.id2word,
                                 bin_ops=data_val.bin_ops,
-                                una_ops=data_val.una_ops)
+                                una_ops=data_val.una_ops,
+                                rewrite_functions=data_val.rewrite_functions)
     validation_path = val_path + "_subset"
     with open(validation_path, "wb") as file:
         pickle.dump(filtered_validation, file)

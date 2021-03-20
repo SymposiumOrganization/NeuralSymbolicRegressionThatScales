@@ -2,7 +2,6 @@ import os
 import numpy as np
 import random
 import math
-from torch.utils.data import TensorDataset, DataLoader,Dataset
 from scipy.optimize import minimize
 import types
 import click
@@ -15,9 +14,10 @@ from torch.utils.data import DataLoader, random_split
 import torch
 from torch import nn
 import torch.nn.functional as F
-from sympy import *
+import sympy as sp
 from dataclasses import dataclass
 from ..dataset.generator import Generator
+from . import data
 from typing import Tuple
 import time
 import re
@@ -53,9 +53,9 @@ def bfgs(pred_str, X, cfg):#n_restarts, env, NMSE=True, idx_remove =True, normal
     #     if mask[i] == True:
     #         x_bfgs[:,:,i] = X[:,:,i]+1 #BFGS wants 1 for a non existing variable 
     # bfgs_input = torch.cat((x_bfgs, y), dim=1)
-    pred_str = ww[1:].tolist()
+    pred_str = pred_str[1:].tolist()
     pred_str = [x if x<14 else x+1 for x in pred_str]
-    prefix = data.de_tokenize(pred_str, cfg_params.id2word)
+    prefix = data.de_tokenize(pred_str, cfg.id2word)
     
     if "constant" in prefix:
         for j,i in enumerate(list(pred_str)[:-1]):
@@ -64,18 +64,18 @@ def bfgs(pred_str, X, cfg):#n_restarts, env, NMSE=True, idx_remove =True, normal
                 c=c+1
         example = "".join(list(expre))  
 
-    elif cfg.add_coefficients_if_not_existing and 'constant' not in prefix:           
+    elif cfg.bfgs.add_coefficients_if_not_existing and 'constant' not in prefix:           
         print("No constants in predicted expression. Attaching them everywhere")
-        f = add_multiplicative_constants(f, sp.Symbol("cm", real=True, nonzero=True), unary_operators=Generator.una_ops)
-        f = add_additive_constants(f, self.placeholders, unary_operators=Generator.una_ops)
-        temp = env.sympy_to_prefix(sympify(pred_str))
-        temp2 = env._prefix_to_infix_with_constants(temp)[0]
-        num = env.count_number_of_constants(temp2)
-        costs = [random.random() for x in range(num)]
-        example = temp2.format(*tuple(costs))
-        pred_str = str(env.constants_to_placeholder(example))
-        c=0
-        expre = list(pred_str)
+        prefix = add_multiplicative_constants(prefix, sp.Symbol("cm", real=True, nonzero=True), unary_operators=cfg.una_ops)
+        prefix = add_additive_constants(prefix,  sp.Symbol("cm", real=True, nonzero=True), unary_operators=cfg.una_ops)
+        # temp = env.sympy_to_prefix(sympify(pred_str))
+        # temp2 = env._prefix_to_infix_with_constants(temp)[0]
+        # num = env.count_number_of_constants(temp2)
+        # costs = [random.random() for x in range(num)]
+        # example = temp2.format(*tuple(costs))
+        # pred_str = str(env.constants_to_placeholder(example))
+        # c=0
+        # expre = list(pred_str)
         for j,i in enumerate(list(pred_str)):
             try:
                 if i == 'c' and list(pred_str)[j+1] != 'o':

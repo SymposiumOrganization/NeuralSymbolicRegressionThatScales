@@ -210,14 +210,31 @@ class Generator(object):
         self.ubi_dist = self.generate_ubi_dist(params.max_ops)
 
         # rewrite expressions
-        self.rewrite_functions = [
+        self.rewrite_functions = self.return_rewrite_functions(params)
+
+
+    @classmethod
+    def return_local_dict(cls, variables=None):
+        local_dict = {}
+        for k, v in list(
+            variables.items()
+        ):  
+            assert k not in local_dict
+            local_dict[k] = v
+        return local_dict
+
+
+    @classmethod
+    def return_rewrite_functions(cls,params):
+        r =  [
             x for x in params.rewrite_functions.split(",") if x != ""
         ]
-        assert len(self.rewrite_functions) == len(set(self.rewrite_functions))
+        assert len(r) == len(set(r))
         assert all(
             x in ["expand", "factor", "expand_log", "logcombine", "powsimp", "simplify"]
-            for x in self.rewrite_functions
+            for x in r
         )
+        return r
 
     def generate_bin_dist(self, max_ops):
         """
@@ -524,12 +541,13 @@ class Generator(object):
             )
         return f"({p})"
 
-    def rewrite_sympy_expr(self, expr):
+    @classmethod
+    def rewrite_sympy_expr(cfg, expr, rewrite_functions=None):
         """
         Rewrite a SymPy expression.
         """
         expr_rw = expr
-        for f in self.rewrite_functions:
+        for f in rewrite_functions:
             if f == "expand":
                 expr_rw = sp.expand(expr_rw)
             elif f == "factor":
@@ -544,18 +562,19 @@ class Generator(object):
                 expr_rw = simplify(expr_rw, seconds=1)
         return expr_rw
 
-    def infix_to_sympy(self, infix, no_rewrite=False, check_if_valid=True):
+    @classmethod
+    def infix_to_sympy(cls, infix, variables, rewrite_functions, no_rewrite=False):
         """
         Convert an infix expression to SymPy.
         """
         try:
-            expr = parse_expr(infix, evaluate=True, local_dict=self.local_dict)
+            expr = parse_expr(infix, evaluate=True, local_dict=cls.return_local_dict(variables))
         except ValueError:
             raise ImAccomulationBounds
         if expr.has(sp.I) or expr.has(AccumBounds):
             raise ValueErrorExpression
         if not no_rewrite:
-            expr = self.rewrite_sympy_expr(expr)
+            expr = cls.rewrite_sympy_expr(expr, rewrite_functions)
         return expr
 
     @classmethod
@@ -616,8 +635,8 @@ class Generator(object):
         # unknown operator
         raise UnknownSymPyOperator(f"Unknown SymPy operator: {expr}")
 
-    def process_equation(self, infix, check_if_valid=True):
-        f = self.infix_to_sympy(infix, check_if_valid=check_if_valid)
+    def process_equation(self, infix):
+        f = self.infix_to_sympy(infix, self.variables, self.rewrite_functions)
 
         
         symbols = set([str(x) for x in f.free_symbols])
