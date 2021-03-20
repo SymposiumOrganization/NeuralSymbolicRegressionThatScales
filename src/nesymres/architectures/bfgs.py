@@ -22,7 +22,7 @@ from typing import Tuple
 import time
 import re
 from ..dataset.sympy_utils import add_multiplicative_constants, add_additive_constants
-    
+
 
 
 class TimedFun:
@@ -54,20 +54,28 @@ def bfgs(pred_str, X, cfg):#n_restarts, env, NMSE=True, idx_remove =True, normal
     #         x_bfgs[:,:,i] = X[:,:,i]+1 #BFGS wants 1 for a non existing variable 
     # bfgs_input = torch.cat((x_bfgs, y), dim=1)
     pred_str = pred_str[1:].tolist()
-    pred_str = [x if x<14 else x+1 for x in pred_str]
+    #pred_str = [x if x<14 else x+1 for x in pred_str]
     prefix = data.de_tokenize(pred_str, cfg.id2word)
-    
-    if "constant" in prefix:
-        for j,i in enumerate(list(pred_str)[:-1]):
-            if i == "constant":    
-                expre[j] = 'c{}'.format(str(c))
-                c=c+1
-        example = "".join(list(expre))  
+    # if "constant" in prefix:
+    #     for j,i in enumerate(list(pred_str)[:-1]):
+    #         if i == "constant":    
+    #             expre[j] = 'c{}'.format(str(c))
+    #             c=c+1
+    #     example = "".join(list(expre))  
 
-    elif cfg.bfgs.add_coefficients_if_not_existing and 'constant' not in prefix:           
+    if cfg.bfgs.add_coefficients_if_not_existing and 'constant' not in prefix:           
         print("No constants in predicted expression. Attaching them everywhere")
-        prefix = add_multiplicative_constants(prefix, sp.Symbol("cm", real=True, nonzero=True), unary_operators=cfg.una_ops)
-        prefix = add_additive_constants(prefix,  sp.Symbol("cm", real=True, nonzero=True), unary_operators=cfg.una_ops)
+        variables = {x:sp.Symbol(x, real=True, nonzero=True) for x in cfg.total_variables}
+        infix = Generator.prefix_to_infix(prefix, coefficients=cfg.total_coefficients, variables=cfg.total_variables)
+        s = Generator.infix_to_sympy(infix,variables, cfg.rewrite_functions)
+        placeholder = {x:sp.Symbol(x, real=True,nonzero=True) for x in ["cm","ca"]}
+        s = add_multiplicative_constants(s, placeholder["cm"], unary_operators=cfg.una_ops)
+        s = add_additive_constants(s,  placeholder, unary_operators=cfg.una_ops)
+        s = s.subs(placeholder["cm"],0.43)
+        s = s.subs(placeholder["ca"],0.421)
+        s_simplified = data.constants_to_placeholder(s,symbol="constant")
+        prefix = Generator.sympy_to_prefix(s_simplified)
+        # prefix = ["constant" if c in ["cm","ca"] else c for c in prefix ]
         # temp = env.sympy_to_prefix(sympify(pred_str))
         # temp2 = env._prefix_to_infix_with_constants(temp)[0]
         # num = env.count_number_of_constants(temp2)
@@ -76,24 +84,32 @@ def bfgs(pred_str, X, cfg):#n_restarts, env, NMSE=True, idx_remove =True, normal
         # pred_str = str(env.constants_to_placeholder(example))
         # c=0
         # expre = list(pred_str)
-        for j,i in enumerate(list(pred_str)):
-            try:
-                if i == 'c' and list(pred_str)[j+1] != 'o':
-                    expre[j] = 'c{}'.format(str(c))
-                    c=c+1
-            except IndexError:
-                if i == 'c':
-                    expre[j] = 'c{}'.format(str(c))
-                    c=c+1        
-        example = "".join(list(expre))
+    
+    # candidate = Generator.prefix_to_infix(prefix, 
+    #                                 coefficients=["constant"], 
+    #                                 variables=cfg.total_variables)
+    
+    
+    breakpoint()
+    for j,i in enumerate(list(candidate)[:-1]):
+        if i == "constant":    
+            candidate[j] = 'c{}'.format(str(c))
+            c=c+1
+    example = "".join(list(candidate))  
+    # for j,i in enumerate(list(pred_str)):
+    #     try:
+    #         if i == 'c' and list(pred_str)[j+1] != 'o':
+    #             expre[j] = 'c{}'.format(str(c))
+    #             c=c+1
+    #     except IndexError:
+    #         if i == 'c':
+    #             expre[j] = 'c{}'.format(str(c))
+    #             c=c+1        
+    # example = "".join(list(expre))
 
-    else:
-        raise NotImplementedError
 
     
-    candidate = Generator.prefix_to_infix(data.de_tokenize(pred_str, cfg_params.id2word), 
-                                    coefficients=["cfg_data.datamodule_params_test.total_coefficients"], 
-                                    variables=cfg_data.datamodule_params_test.total_variables)
+    
     print('Constructing BFGS loss...')
     #construct loss function
     x = Symbol('x')
@@ -103,8 +119,9 @@ def bfgs(pred_str, X, cfg):#n_restarts, env, NMSE=True, idx_remove =True, normal
     for i in range(0,40):                                        #change to actual number of consts
         symbols[i] = Symbol('c{}'.format(i))
     input_batch = input_batch.cpu() 
-    xx = input_batch[:,:3].T  
+    xx = input_batch[:,: len(cfg.total_variables)].T  
 
+    cfg.
     if idx_remove:
         print('Removing indeces with high values...')
         idx_leave = np.where((np.abs(input_batch[:,3].numpy()))<200)[0]

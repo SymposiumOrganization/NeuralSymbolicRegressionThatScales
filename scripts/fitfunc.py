@@ -18,14 +18,21 @@ from functools import partial
 
 
 def main():
-    model_path = "Exp_weights/data/datasets/100K/100K_train_log_-epoch=25-val_loss=1.04.ckpt"
+    model_path = "Exp_weights/data/datasets/100K/100K_train_log_-epoch=04-val_loss=1.07.ckpt"
     test_data = load_data("data/datasets/100K/100K_val_subset")
     data_params = Params(datamodule_params_test=DataModuleParams(
                                 total_variables=list(test_data.total_variables), 
                                 total_coefficients=list(test_data.total_coefficients)),num_of_workers=0)
 
     architecture_params = ArchitectureParams()
-    params_fit = FitParams(word2id=test_data.word2id, id2word=test_data.id2word, una_ops=test_data.una_ops, bin_ops=test_data.bin_ops, total_variables=list(test_data.total_variables),  total_coefficients=list(test_data.total_coefficients))
+    params_fit = FitParams(word2id=test_data.word2id, 
+                            id2word=test_data.id2word, 
+                            una_ops=test_data.una_ops, 
+                            bin_ops=test_data.bin_ops, 
+                            total_variables=list(test_data.total_variables),  
+                            total_coefficients=list(test_data.total_coefficients),
+                            rewrite_functions=list(test_data.rewrite_functions)
+                            )
     data = DataModule(
         None,
         None,

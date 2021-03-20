@@ -52,25 +52,38 @@ class NesymresDataset(data.Dataset):
     def __getitem__(self, index):
         eq = self.eqs[index]
         code = types.FunctionType(eq.code, globals=globals(), name="f")
-        consts = {const: 1 if const[:2] == "cm" else 0 for const in eq.coeff_dict.keys()}
-        if self.data_params.predict_c:
-            used_consts = random.randint(0, min(len(eq.coeff_dict),self.data_params.constant_degree_of_freedom))
-            symbols_used = random.sample(set(eq.coeff_dict.keys()), used_consts)
-            for si in symbols_used:
-                consts[si] = Uniform(self.data_params.constant_support[0], self.data_params.constant_support[1]).sample()
+        initial_consts = {const: 1 if const[:2] == "cm" else 0 for const in eq.coeff_dict.keys()}
+        consts = initial_consts.copy()
+        
+        used_consts = random.randint(0, min(len(eq.coeff_dict),self.data_params.constant_degree_of_freedom))
+        symbols_used = random.sample(set(eq.coeff_dict.keys()), used_consts)
+        for si in symbols_used:
+            if si[:2] == "ca":
+                consts[si] = Uniform(self.data_params.additive_constant_support[0], self.data_params.additive_constant_support[1]).sample()
+            elif si[:2] == "cm":
+                consts[si] = Uniform(self.data_params.multiplicative_constant_support[0], self.data_params.multiplicative_constant_support[1]).sample()
+            else:
+                raise KeyError
 
-        eq_string = eq.expr.format(**consts)
+        if self.data_params.predict_c:
+            eq_string = eq.expr.format(**consts)
+        else:
+            eq_string = eq.expr.format(**initial_consts)
+
         eq_sympy_infix = constants_to_placeholder(eq_string)
         eq_sympy_prefix = Generator.sympy_to_prefix(eq_sympy_infix)
 
         if not self.data_params.predict_c:
-            assert "c" not in eq_sympy_prefix
+            for j,i in enumerate(list(eq_sympy_prefix)):
+                if i == 'c' and list(eq_sympy_prefix)[j+1] != 'o':
+                    assert False
+        
         try:
             t = tokenize(eq_sympy_prefix,self.data.word2id)
-            curr = Equation(code=code,expr=sympify(eq_string),coeff_dict=eq.coeff_dict,variables=eq.variables,support=eq.support, tokenized=t, valid=True)
+            curr = Equation(code=code,expr=sympify(eq_sympy_prefix),coeff_dict=consts,variables=eq.variables,support=eq.support, tokenized=t, valid=True)
         except:
             t = []
-            curr = Equation(code=code,expr=sympify(eq_string),coeff_dict=eq.coeff_dict,variables=eq.variables,support=eq.support, valid=False)
+            curr = Equation(code=code,expr=sympify(eq_sympy_prefix),coeff_dict=consts,variables=eq.variables,support=eq.support, valid=False)
         return curr
 
     def __len__(self):
@@ -82,12 +95,12 @@ def custom_collate_fn(eqs: List[Equation], cfg: DatasetParams = None):
     return res, tokens
 
 
-def constants_to_placeholder(s):
+def constants_to_placeholder(s,symbol="c"):
     try:
         sympy_expr = sympify(s)  # self.infix_to_sympy("(" + s + ")")
         sympy_expr = sympy_expr.xreplace(
             Transform(
-                lambda x: Symbol("c", real=True, nonzero=True),
+                lambda x: Symbol(symbol, real=True, nonzero=True),
                 lambda x: isinstance(x, Float),
             )
         )
@@ -146,20 +159,19 @@ def sample_support(eq, curr_p, cfg: DatasetParams):
 
 def sample_constants(eq, curr_p, cfg:DatasetParams):
     consts = []
-    eq_c = set(eq.coeff_dict.values())
+    #eq_c = set(eq.coeff_dict.values())
     for c in cfg.total_coefficients:
         if c[:2] == "cm":
-            if c in eq_c:
-                curr = torch.ones([int(curr_p)]) * Uniform(cfg.multiplicative_constant_support[0],cfg.multiplicative_constant_support[1]).sample()
+            if c in eq.coeff_dict:
+                curr = torch.ones([int(curr_p)]) * eq.coeff_dict[c]
             else:
                 curr = torch.ones([int(curr_p)])
         elif c[:2] == "ca":
-            if c in eq_c:
-                curr = torch.ones([int(curr_p)]) * Uniform(cfg.additive_constant_support[0],cfg.additive_constant_support[1]).sample()
+            if c in eq.coeff_dict:
+                curr = torch.ones([int(curr_p)]) * eq.coeff_dict[c]
             else:
                 curr = torch.zeros([int(curr_p)])
         consts.append(curr)
-    
     return torch.stack(consts)
 
 def evaluate_and_wrap(eqs: List[Equation], cfg: DatasetParams):

@@ -462,7 +462,8 @@ class Generator(object):
             f"Unknown token in prefix expression: {token}, with arguments {args}"
         )
 
-    def add_identifier_constants(self, expr_list):
+    @classmethod
+    def add_identifier_constants(cls, expr_list):
         curr = Counter()
         curr["cm"] = 0
         curr["ca"] = 0

@@ -105,7 +105,7 @@ class Params:
     datamodule_params_train: DataModuleParams = DataModuleParams()
     datamodule_params_val: DataModuleParams = DataModuleParams()
     datamodule_params_test: DataModuleParams = DataModuleParams()
-    num_of_workers: int = 32
+    num_of_workers: int = 0
     max_epochs: int = 200
     val_check_interval: float = 0.2
     precision: int = 16

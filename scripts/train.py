@@ -30,10 +30,12 @@ def main():
     wandb = None
     params = Params(datamodule_params_train=DataModuleParams(
                                 total_variables=list(train_data.total_variables), 
-                                total_coefficients=list(train_data.total_coefficients)),
+                                total_coefficients=list(train_data.total_coefficients),
+                                predict_c=True),
                     datamodule_params_val=DataModuleParams(
                         total_variables=list(val_data.total_variables), 
-                        total_coefficients=list(val_data.total_coefficients)))
+                        total_coefficients=list(val_data.total_coefficients),
+                        predict_c=True))
     architecture_params = ArchitectureParams()
     data = DataModule(
         train_data,
