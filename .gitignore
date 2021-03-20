@@ -3,3 +3,5 @@ data/*
 *.egg-info
 __pycache__
 lightning_logs/*
+Exp_weights/*
+wandb/*

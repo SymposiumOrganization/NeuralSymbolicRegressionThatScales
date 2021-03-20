@@ -87,6 +87,7 @@ class Model(pl.LightningModule):
             .type_as(trg)
         )
         te = self.tok_embedding(trg[:, :-1])
+        #breakpoint()
         trg_ = self.dropout(te + pos)
         output = self.decoder_transfomer(
             trg_.permute(1, 0, 2),
@@ -113,6 +114,7 @@ class Model(pl.LightningModule):
         output, trg = self.forward(batch)
         loss = self.compute_loss(output,trg)
         self.log("val_loss", loss, on_epoch=True)
+        return loss
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.cfg.lr)

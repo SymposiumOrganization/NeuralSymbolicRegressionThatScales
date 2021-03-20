@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from types import CodeType
 from typing import List, Tuple
 from torch.distributions import Uniform, Normal, Distribution
+from dataclass_dict_convert import dataclass_dict_convert
 
 @dataclass
 class Equation:
@@ -62,11 +63,12 @@ class DataModuleParams:
     total_variables: list = None
     total_coefficients: list = None
 
-@dataclass
+@dataclass_dict_convert()
+@dataclass(frozen=True)
 class Architecture:
     sinuisodal_embeddings: bool = False
     dec_pf_dim: int = 512
-    dec_layers: int = 5 
+    dec_layers: int = 2 
     dim_hidden: int = 512  
     lr: int = 0.0001
     dropout: int = 0
@@ -81,13 +83,13 @@ class Architecture:
     input_normalization: bool = False
     src_pad_idx: int = 0
     trg_pad_idx: int = 0
-    length_eq: int = 40
-    n_l_enc: int = 4
+    length_eq: int = 60
+    n_l_enc: int = 2
     mean: float = 0.5  
     std: float = 0.5 
     dim_input: int = 4
     num_heads: int = 8
-    output_dim: int = 43
+    output_dim: int = 60
     dropout: float = 0
 
 
@@ -100,9 +102,9 @@ class Params:
     architecture: Architecture = Architecture()
     num_of_workers: int = 32
     max_epochs: int = 200
-    val_check_interval: float = 0.05
+    val_check_interval: float = 0.2
     precision: int = 16
-    batch_size: int = 450
+    batch_size: int = 100
 
 
 
