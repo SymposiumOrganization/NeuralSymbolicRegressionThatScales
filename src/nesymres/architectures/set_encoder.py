@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 from .set_transformer import ISAB, PMA
-from ..dclasses import Architecture
+from ..dclasses import ArchitectureParams
 
 class SetEncoder(pl.LightningModule):
-    def __init__(self,cfg: Architecture):
+    def __init__(self,cfg: ArchitectureParams):
         super(SetEncoder, self).__init__()
         self.linear = cfg.linear
         self.bit16 = cfg.bit16

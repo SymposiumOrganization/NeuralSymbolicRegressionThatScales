@@ -109,9 +109,23 @@ def main(eqs_for_validation, data_path):
     assert not validation_indeces[0] in training_indeces
 
     train_eqs = [data.eqs[x] for x in training_indeces]
-    training_dataset = dclasses.Dataset(eqs=train_eqs, config=data.config, total_coefficients=data.total_coefficients, total_variables=data.total_variables, word2id=data.word2id, id2word=data.id2word)
+    training_dataset = dclasses.Dataset(eqs=train_eqs, 
+                                        config=data.config, 
+                                        total_coefficients=data.total_coefficients, 
+                                        total_variables=data.total_variables, 
+                                        word2id=data.word2id, 
+                                        id2word=data.id2word,
+                                        una_ops=data.una_ops,
+                                        bin_ops=data.bin_ops)
     val_eqs = [data.eqs[x] for x in validation_indeces]
-    validation_dataset = dclasses.Dataset(eqs=val_eqs, config=data.config, total_coefficients=data.total_coefficients, total_variables=data.total_variables, word2id=data.word2id, id2word=data.id2word)
+    validation_dataset = dclasses.Dataset(eqs=val_eqs, 
+                                        config=data.config, 
+                                        total_coefficients=data.total_coefficients, 
+                                        total_variables=data.total_variables, 
+                                        word2id=data.word2id, 
+                                        id2word=data.id2word,
+                                        una_ops=data.una_ops,
+                                        bin_ops=data.bin_ops)
 
     t = [x.expr for x in training_dataset.eqs]
     t_n = [x for x in training_indeces if disjoint_sets[x]]

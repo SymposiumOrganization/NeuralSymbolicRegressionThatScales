@@ -21,7 +21,7 @@ from ..dataset.generator import Generator
 from typing import Tuple
 import time
 import re
-from ..datasetsympy_utils import add_multiplicative_constants, add_additive_constants
+from ..dataset.sympy_utils import add_multiplicative_constants, add_additive_constants
     
 
 

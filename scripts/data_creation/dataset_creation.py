@@ -65,7 +65,7 @@ class Pipepile:
         prefix, variables = self.env.generate_equation(np.random)
         prefix = self.env.add_identifier_constants(prefix)
         consts =  self.env.return_constants(prefix)
-        infix, _  = self.env._prefix_to_infix(prefix)
+        infix, _  = self.env._prefix_to_infix(prefix, coefficients=self.env.coefficients, variables=self.env.variables)
         consts_elemns = {y:y for x in consts.values() for y in x}
         constants_expression = infix.format(**consts_elemns)
         eq = lambdify(
@@ -112,7 +112,14 @@ def creator(number_of_equations, debug):
     else:
         res = list(map(env_pip.return_training_set, tqdm(range(0, total_number))))
     
-    dataset = dclasses.Dataset(eqs=res, config=config_dict, total_variables=list(env.variables), total_coefficients=env.coefficients, word2id=env.word2id, id2word=env.id2word)
+    dataset = dclasses.Dataset(eqs=res, 
+                               config=config_dict, 
+                               total_variables=list(env.variables), 
+                               total_coefficients=env.coefficients, 
+                               word2id=env.word2id, 
+                               id2word=env.id2word,
+                               una_ops=env.una_ops,
+                               bin_ops=env.una_ops)
     print("Expression generation took {} seconds".format(time.time() - starttime))
     print(
         "Total number of equations created {}".format(

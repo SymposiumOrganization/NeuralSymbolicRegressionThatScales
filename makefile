@@ -9,3 +9,6 @@ data/datasets/${NUM}/.dirstamp: data/raw_datasets/${NUM}
 
 data/datasets/${NUM}/${NUM}_subset: data/datasets/${NUM}/.dirstamp
 	python3 scripts/data_creation/filter_validation.py --val_path data/datasets/${NUM}/${NUM}_val
+
+
+train: data/datasets/${NUM}/${NUM}_subset, 

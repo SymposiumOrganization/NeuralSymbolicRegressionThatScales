@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader, random_split
 import pytorch_lightning as pl
 from .set_encoder import SetEncoder
 from .beam_search import BeamHypotheses
-from ..dclasses import Architecture
+from ..dclasses import ArchitectureParams
 import numpy as np
 from tqdm import tqdm 
 from ..dataset.generator import Generator, InvalidPrefixExpression
@@ -17,7 +17,7 @@ from . import bfgs
 class Model(pl.LightningModule):
     def __init__(
         self,
-        cfg: Architecture
+        cfg: ArchitectureParams
     ):
         super().__init__()
 

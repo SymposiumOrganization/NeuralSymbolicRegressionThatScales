@@ -34,8 +34,10 @@ class Dataset:
     total_variables: list
     word2id: dict
     id2word: dict
+    una_ops: list
+    bin_ops: list
     unique_index: set = None
-  
+    
     
 @dataclass
 class DatasetParams:
@@ -66,7 +68,7 @@ class DataModuleParams:
 
 @dataclass_dict_convert()
 @dataclass(frozen=True)
-class Architecture:
+class ArchitectureParams:
     sinuisodal_embeddings: bool = False
     dec_pf_dim: int = 512
     dec_layers: int = 2

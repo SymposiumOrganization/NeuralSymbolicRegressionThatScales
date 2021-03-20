@@ -46,7 +46,15 @@ def main(val_path,num_target_eq):
     data_val.eqs = [x for idx, x in enumerate(data_val.eqs) if idx in data_val.unique_index]
     to_keep = choose_eqs(data_val)[:num_target_eq]
     eqs = [data_val.eqs[x] for x in to_keep]
-    filtered_validation = dclasses.Dataset(eqs=eqs, config=data_val.config, total_coefficients=data_val.total_coefficients, total_variables=data_val.total_variables, unique_index=range(len(to_keep)),  word2id=data_val.word2id, id2word=data_val.id2word)
+    filtered_validation = dclasses.Dataset(eqs=eqs, 
+                                config=data_val.config, 
+                                total_coefficients=data_val.total_coefficients, 
+                                total_variables=data_val.total_variables, 
+                                unique_index=range(len(to_keep)),  
+                                word2id=data_val.word2id, 
+                                id2word=data_val.id2word,
+                                bin_ops=data_val.bin_ops,
+                                una_ops=data_val.una_ops)
     validation_path = val_path + "_subset"
     with open(validation_path, "wb") as file:
         pickle.dump(filtered_validation, file)

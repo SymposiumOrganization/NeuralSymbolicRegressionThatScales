@@ -643,8 +643,7 @@ class Generator(object):
         """
         nb_ops = rng.randint(3, self.max_ops + 1)
         f_expr = self._generate_expr(nb_ops, rng, max_int=1)
-
-        infix = self.prefix_to_infix(f_exp, coefficients=self.coefficients, variables=self.variables)
+        infix = self.prefix_to_infix(f_expr, coefficients=self.coefficients, variables=self.variables)
         f = self.process_equation(infix)
         f_prefix = self.sympy_to_prefix(f)
         # skip too long sequences

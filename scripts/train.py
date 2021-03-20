@@ -14,7 +14,7 @@ from typing import Tuple
 #from nesymres.utils import *
 from nesymres.architectures.model import Model
 from nesymres.architectures.data import DataModule
-from nesymres.dclasses import Params, DataModuleParams
+from nesymres.dclasses import Params, DataModuleParams, ArchitectureParams
 seed_everything(9)
 from nesymres.utils import load_data
 import wandb
@@ -28,22 +28,22 @@ def main():
     val_data = load_data("data/datasets/100K/100K_val_subset")
     test_data = None
     wandb = None
-    data_params = Params(datamodule_params_train=DataModuleParams(
+    params = Params(datamodule_params_train=DataModuleParams(
                                 total_variables=list(train_data.total_variables), 
                                 total_coefficients=list(train_data.total_coefficients)),
                     datamodule_params_val=DataModuleParams(
                         total_variables=list(val_data.total_variables), 
                         total_coefficients=list(val_data.total_coefficients)))
-    architecture_params = Params()
+    architecture_params = ArchitectureParams()
     data = DataModule(
         train_data,
         val_data,
         None,
-        cfg=data_params
+        cfg=params
     )
-    model = Model(cfg=params.architecture)
+    model = Model(cfg=architecture_params)
     if wandb:
-        wandb.init(config=params.architecture.to_dict(), project="ICML")
+        wandb.init(config=architecture_params.to_dict(), project="ICML")
         config = wandb.config
         wandb_logger = WandbLogger()
     else:
