@@ -85,17 +85,16 @@ def bfgs(pred_str, X, cfg):#n_restarts, env, NMSE=True, idx_remove =True, normal
         # c=0
         # expre = list(pred_str)
     
-    # candidate = Generator.prefix_to_infix(prefix, 
-    #                                 coefficients=["constant"], 
-    #                                 variables=cfg.total_variables)
+    candidate = Generator.prefix_to_infix(prefix, 
+                                    coefficients=["constant"], 
+                                    variables=cfg.total_variables)
+    candidate = candidate.format(constant="constant")
     
-    
-    breakpoint()
-    for j,i in enumerate(list(candidate)[:-1]):
-        if i == "constant":    
-            candidate[j] = 'c{}'.format(str(c))
-            c=c+1
-    example = "".join(list(candidate))  
+    c = 0 
+    example = candidate
+    for i in range(candidate.count("constant")):
+        example = example.replace("constant", f"c{i}",1)
+
     # for j,i in enumerate(list(pred_str)):
     #     try:
     #         if i == 'c' and list(pred_str)[j+1] != 'o':
@@ -109,34 +108,33 @@ def bfgs(pred_str, X, cfg):#n_restarts, env, NMSE=True, idx_remove =True, normal
 
 
     
-    
     print('Constructing BFGS loss...')
+    # input_batch = input_batch.cpu() 
+    # xx = X[:,: len(cfg.total_variables)].T  
     #construct loss function
-    x = Symbol('x')
-    y = Symbol('y')
-    z = Symbol('z')
-    symbols = {}
-    for i in range(0,40):                                        #change to actual number of consts
-        symbols[i] = Symbol('c{}'.format(i))
-    input_batch = input_batch.cpu() 
-    xx = input_batch[:,: len(cfg.total_variables)].T  
+    # x = Symbol('x')
+    # y = Symbol('y')
+    # z = Symbol('z')
+    symbols = {i: sp.Symbol(f'c{i}') for i in range(candidate.count("constant"))}
 
-    cfg.
-    if idx_remove:
-        print('Removing indeces with high values...')
-        idx_leave = np.where((np.abs(input_batch[:,3].numpy()))<200)[0]
-        xx = xx[:,idx_leave]
-        input_batch = input_batch[idx_leave,:]
 
-    mean = (np.mean(torch.abs(input_batch[:,-1]).numpy()))
-    max = np.max(np.abs(torch.abs(input_batch[:,-1]).numpy()))
+    if cfg.bfgs.idx_remove:
+        print('Flag idx remove ON, Removing indeces with high values...')
+        bool_con = (X<200).all(axis=1).squeeze() 
+        X = X[:,:,bool_con]
+        # idx_leave = np.where((np.abs(input_batch[:,3].numpy()))<200)[0]
+        # xx = xx[:,idx_leave]
+        # input_batch = input_batch[idx_leave,:]
+
+    mean_y = (np.mean(y.numpy()))
+    max_y = np.max(np.abs(torch.abs(input_batch[:,-1]).numpy()))
     print('checking input values range...')
     if mean >100 or max > 300:
         print('Attention, input values are very large. Optimization may fail due to numerical issues')
             
     diff = [sympify(example).replace(y,xx[1,i]).replace(x,xx[0,i]).replace(z,xx[2,i])-input_batch[i,-1] for i in range(input_batch.shape[0])]
     if normalization_o:
-        diff = [sympify(example).replace(y,xx[1,i]).replace(x,xx[0,i]).replace(z,xx[2,i])-input_batch[i,-1]/max for i in range(input_batch.shape[0])]
+        diff = [sympify(example).replace(y,xx[1,i]).replace(x,xx[0,i]).replace(z,xx[2,i])-input_batch[i,-1]/max_eq for i in range(input_batch.shape[0])]
     loss = 0
     cnt = 0
     if NMSE == True and (mean != 0):

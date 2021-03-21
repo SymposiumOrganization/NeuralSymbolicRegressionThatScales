@@ -119,6 +119,7 @@ class BFGSParams:
     n_restarts: bool = 10
     add_coefficients_if_not_existing: bool = True
     normalization_o: bool = False
+    idx_remove: bool = True
     
 
 @dataclass
