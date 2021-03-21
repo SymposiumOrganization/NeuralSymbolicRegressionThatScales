@@ -9,8 +9,36 @@ from torch.distributions.uniform import Uniform
 import math
 import types
 from numpy import log, cosh, sinh, exp, cos, tanh, sqrt, sin, tan, arctan, nan, pi, e, arcsin, arccos
-from sympy import sympify, Symbol
+from sympy import sympify,lambdify, Symbol
 from sympy import Float
+
+
+def evaluate_validation_set(validation_set, support) -> set:
+    res = set()
+    for i in validation_set:
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            curr = tuple(lambdify(['x','y','z'],i)(*support).numpy().astype('float16'))
+            res.add(curr)
+    return res
+
+def create_uniform_support(sampling_distribution, n_variables, p):
+    sym = {}
+    for idx in range(n_variables):
+        sym[idx] = sampling_distribution.sample([int(p)])
+    support = torch.stack([x for x in sym.values()])
+    return support
+
+
+def group_symbolically_indetical_eqs(data,indexes_dict,disjoint_sets):
+    for i, val in enumerate(data.eqs):
+        if not val.expr in indexes_dict:
+            indexes_dict[val.expr].append(i)
+            disjoint_sets[i].append(i)
+        else:
+            first_key = indexes_dict[val.expr][0]
+            disjoint_sets[first_key].append(i)
+    return indexes_dict, disjoint_sets
 
 
 def dataset_loader(train_dataset, test_dataset, batch_size=1024, valid_size=0.20):

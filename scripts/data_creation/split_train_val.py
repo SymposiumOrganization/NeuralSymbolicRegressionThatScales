@@ -15,27 +15,13 @@ import warnings
 from nesymres.utils import code_unpickler, code_pickler, load_data
 from nesymres import dclasses
 from pathlib import Path
-from nesymres.dataset.data_utils import evaluate_fun
-
-
-def group_symbolically_indetical_eqs(data,indexes_dict,disjoint_sets):
-    for i, val in enumerate(data.eqs):
-        if not val.expr in indexes_dict:
-            indexes_dict[val.expr].append(i)
-            disjoint_sets[i].append(i)
-        else:
-            first_key = indexes_dict[val.expr][0]
-            disjoint_sets[first_key].append(i)
-    return indexes_dict, disjoint_sets
+from nesymres.dataset.data_utils import evaluate_fun, group_symbolically_indetical_eqs, create_uniform_support
 
 def group_numerical_indetical_eqs(data,disjoint_sets):
     sampling_distribution = Uniform(-25,25)
     num_p = 400
-    sym = {}
-    for idx, sy in enumerate(data.total_variables):
-        sym[idx] = sampling_distribution.sample([int(num_p)])
+    support = create_uniform_support(sampling_distribution, len(data.total_variables), num_p)
     consts = torch.stack([torch.ones([int(num_p)]) for i in data.total_coefficients])
-    support = torch.stack([x for x in sym.values()])
     input_lambdi = torch.cat([support,consts],axis=0)
     assert input_lambdi.shape[0]  == len(data.total_coefficients) + len(data.total_variables)
     fun = [data.eqs[x[0]].code if x else [] for x in disjoint_sets]
