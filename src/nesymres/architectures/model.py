@@ -275,18 +275,10 @@ class Model(pl.LightningModule):
             best_preds_bfgs = []
             best_L = []
             best_L_bfgs = []
-            #for ii in tqdm(range(bs)):
 
-            #numbers_gt = y.squeeze() #y[ii]
-            # idx_nan_trg = np.where(np.isnan(y.squeeze()))[0]
-            # idx_inf_trg = np.where(np.abs(y.squeeze()) == np.inf)[0]
-            # idx_trg = np.unique(np.concatenate([idx_nan_trg, idx_inf_trg]))
-
-            #cnt = cnt + 1
             flag = 0
-            L = []
             L_bfgs = []
-            #P = []
+            P = []
             P_bfgs = []
             counter = 1
 
@@ -295,70 +287,47 @@ class Model(pl.LightningModule):
             for __, ww in sorted(
                 generated_hyps.hyp, key=lambda x: x[0], reverse=True
             ):
-                # ww = [x if x<14 else x+1 for x in ww]
-                # numbers_pred = lambdify(fun_args, pre)(*X)
-                # idx_nan_pred = np.where(np.isnan(numbers_pred))[0]
-                # idx_inf_pred = np.where(np.abs(numbers_pred) == np.inf)[0]
-                # idx_pred = np.unique(
-                #     np.concatenate([idx_nan_pred, idx_inf_pred])
-                # )
-                # idx_nan = np.unique(np.concatenate([idx_pred, idx_trg]))
-                # iii = np.setdiff1d(np.arange(0, X.shape[1]), idx_nan)
-                # loss = np.mean(np.square(numbers_gt[iii].squeeze().numpy() - numbers_pred[iii]))
-                # # print(loss)
-                # L.append(np.abs(loss))
-                # try:
-                #if bfgs_:
                 try:
                     pred_w_c, constants, loss_bfgs, exa = bfgs.bfgs(
-                        ww, X, cfg_params
+                        ww, X, y, cfg_params
                     )
                 except InvalidPrefixExpression:
                     continue
-                L_bfgs = loss_bfgs
+                #L_bfgs = loss_bfgs
                 P_bfgs.append(str(pred_w_c))
+                L_bfgs.append(loss_bfgs)
 
-                    # cc = get_coeffs(hh[4:])
-                    # print(f"{ss:+.4f} {hh} || {cc[0]} || {cc[1]}")
-                # if flag == 0:
-                #     breakpoint()
-                # print("")
+            best_preds_bfgs.append(P_bfgs[np.nanargmin(L_bfgs)])
+            best_L_bfgs.append(np.nanmin(L_bfgs))
 
-                best_preds.append(P[np.nanargmin(L)][0])
-                best_L.append(np.nanmin(L))
-                if bfgs_:
-                    best_preds_bfgs.append(P_bfgs[np.nanargmin(L_bfgs)])
-                    best_L_bfgs.append(np.nanmin(L_bfgs))
+            #tgt_len = torch.zeros(bs, device=self.device)  # src_len.new(bs)
+            # best = []
+            # for i, hypotheses in enumerate(generated_hyps):
+            #     breakpoint()
+            #     best_hyp = max(hypotheses.hyp, key=lambda x: x[0])[1]
+            #     tgt_len[i] = len(best_hyp) + 1  # +1 for the <EOS> symbol
+            #     best.append(best_hyp)
 
-            tgt_len = torch.zeros(bs, device=self.device)  # src_len.new(bs)
-            best = []
+            # self.log(
+            #     "score",
+            #     perc * 100 / cnt,
+            #     on_step=True,
+            #     on_epoch=True,
+            #     prog_bar=True,
+            #     logger=True,
+            # )
+            # self.log(
+            #     "correct", perc, on_step=True, on_epoch=True, prog_bar=True, logger=True
+            # )
+            # self.log(
+            #     "tot", cnt, on_step=True, on_epoch=True, prog_bar=True, logger=True
+            # )
 
-            for i, hypotheses in enumerate(generated_hyps):
-                best_hyp = max(hypotheses.hyp, key=lambda x: x[0])[1]
-                tgt_len[i] = len(best_hyp) + 1  # +1 for the <EOS> symbol
-                best.append(best_hyp)
-
-            self.log(
-                "score",
-                perc * 100 / cnt,
-                on_step=True,
-                on_epoch=True,
-                prog_bar=True,
-                logger=True,
-            )
-            self.log(
-                "correct", perc, on_step=True, on_epoch=True, prog_bar=True, logger=True
-            )
-            self.log(
-                "tot", cnt, on_step=True, on_epoch=True, prog_bar=True, logger=True
-            )
-
-            if bfgs_:
-                output = {'all_skel_outputs':P, 'all_skel_loss':L, 'all_bfgs_preds':P_bfgs, 'all_bfgs_loss':L_bfgs, 'best_skel_outputs':best_preds, 'best_skel_loss':best_L, 'best_bfgs_preds':best_preds_bfgs, 'best_bfgs_loss':best_L_bfgs}
-                return output
-            else:
-                output = {'all_skel_outputs':P, 'all_skel_loss':L, 'best_skel_outputs':best_preds, 'best_skel_loss':best_L}
-                return output
+            output = {'all_skel_outputs':P, 'all_bfgs_preds':P_bfgs, 'all_bfgs_loss':L_bfgs, 'best_bfgs_preds':best_preds_bfgs, 'best_bfgs_loss':best_L_bfgs}
+            return output
+            # else:
+            #     output = {'all_skel_outputs':P, 'all_skel_loss':L, 'best_skel_outputs':best_preds, 'best_skel_loss':best_L}
+            #     return output
 
 
 

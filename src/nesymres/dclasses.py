@@ -120,7 +120,8 @@ class BFGSParams:
     add_coefficients_if_not_existing: bool = True
     normalization_o: bool = False
     idx_remove: bool = True
-    
+    normalization_type: str = ["MSE","NMSE"][0]
+    stop_time: int = 1e9
 
 @dataclass
 class FitParams:
@@ -132,5 +133,5 @@ class FitParams:
     una_ops: list = None
     bin_ops: list = None
     bfgs: BFGSParams = BFGSParams()
-    beam_size: int = 100
+    beam_size: int = 3
     
