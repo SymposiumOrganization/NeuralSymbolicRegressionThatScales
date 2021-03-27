@@ -54,7 +54,6 @@ class InvalidPrefixExpression(Exception):
     pass
 
 class Generator(object):
-
     SYMPY_OPERATORS = {
         # Elementary functions
         sp.Add: "add",

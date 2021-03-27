@@ -11,7 +11,6 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning import Trainer, seed_everything
 from dataclasses import dataclass
 from typing import Tuple
-#from nesymres.utils import *
 from nesymres.architectures.model import Model
 from nesymres.architectures.data import DataModule
 from nesymres.dclasses import Params, DataModuleParams, ArchitectureParams
@@ -65,12 +64,10 @@ def main():
         val_check_interval=params.val_check_interval,
         logger=wandb_logger,
         callbacks=[checkpoint_callback],
-        #precision=params.precision,
     )
     trainer.fit(model, data)
 
 
 if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # ,1,2,4,5,6,7" Change Me
-    #print(f"Starting a run with {config}")
     main()

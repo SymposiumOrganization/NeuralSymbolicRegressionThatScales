@@ -39,33 +39,28 @@ def return_numerically_different_from_validation(data,disjoint_sets, validation_
     seen = defaultdict(list)
     counter = 0
     for i, val in enumerate(res):
-        if val == []:
+        if not len(val):
             continue
         val = tuple(val)
         assert tuple(val) == tuple(val)
         if val in validation_set:
             counter = counter + 1
             continue
-        # if not val in seen:
-        #     seen[val].append(i)
         else:
             disjoint_set_updated[i].extend(disjoint_sets[i])
             
-        # else:
-        #     counter = counter + 1
-        #     first_key = seen[val][0]
-        #     disjoint_set_updated[first_key].extend(disjoint_sets[i])
+
     print("Equations in test set".format(counter/len(data.eqs)))
     return disjoint_set_updated
 
 
 @click.command()
 @click.option("--data_path", default=None)
-@click.option("--csv_path", default=None)
+@click.option("--csv_path", prompt='Insert the csv path', default="data/csv/ours_all_flavours.csv")
 def main(data_path,csv_path):
     print("Started Loading Data")
     data = load_data(data_path)
-    validation = pd.read_csv("data/goal.csv")
+    validation = pd.read_csv(csv_path)
     print("Loading Data Complete")
 
     print("Grouping equations with identical symbolic form")
@@ -73,10 +68,9 @@ def main(data_path,csv_path):
     disjoint_sets = [[] for _ in range(len(data.eqs))]
     indexes_dict, disjoint_sets = group_symbolically_indetical_eqs(data, indexes_dict, disjoint_sets)
 
-    validation_set = set(validation.loc[validation["benchmark"]=="ours-nc"]["gt_expr"])
-    disjoint_set_updated = return_numerically_different_from_validation(data,disjoint_sets, validation_set=validation_set)
+    #validation_set = set(validation.loc[validation["benchmark"]=="ours-nc"]["gt_expr"])
+    disjoint_set_updated = return_numerically_different_from_validation(data,disjoint_sets, validation_set=set(validation["gt_expr"]))
 
-    #breakpoint()
     print("Creating Training Set")
     training_indices = []
     for i in disjoint_set_updated:
@@ -92,12 +86,13 @@ def main(data_path,csv_path):
                                         bin_ops=data.bin_ops,
                                         rewrite_functions=data.rewrite_functions)   
     
-
     p = os.path.join(Path(data_path).parent.parent, "datasets", Path(data_path).stem)
     Path(p).mkdir(parents=True, exist_ok=True)
-    training_path = os.path.join(p,Path(p).stem + "_train")
+    training_path = os.path.join(p,Path(p).stem + "_filtered")
     with open(training_path, "wb") as file:
         pickle.dump(train_excludes_set, file)
+
+    
 
 if __name__=="__main__":
     main()
