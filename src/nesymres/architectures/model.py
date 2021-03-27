@@ -278,7 +278,6 @@ class Model(pl.LightningModule):
 
             flag = 0
             L_bfgs = []
-            P = []
             P_bfgs = []
             counter = 1
 
@@ -322,8 +321,8 @@ class Model(pl.LightningModule):
             # self.log(
             #     "tot", cnt, on_step=True, on_epoch=True, prog_bar=True, logger=True
             # )
-
-            output = {'all_skel_outputs':P, 'all_bfgs_preds':P_bfgs, 'all_bfgs_loss':L_bfgs, 'best_bfgs_preds':best_preds_bfgs, 'best_bfgs_loss':best_L_bfgs}
+            breakpoint()
+            output = {'all_bfgs_preds':P_bfgs, 'all_bfgs_loss':L_bfgs, 'best_bfgs_preds':best_preds_bfgs, 'best_bfgs_loss':best_L_bfgs}
             return output
             # else:
             #     output = {'all_skel_outputs':P, 'all_skel_loss':L, 'best_skel_outputs':best_preds, 'best_skel_loss':best_L}
