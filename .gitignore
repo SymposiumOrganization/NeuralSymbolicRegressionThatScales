@@ -5,3 +5,4 @@ __pycache__
 lightning_logs/*
 Exp_weights/*
 wandb/*
+*.log
