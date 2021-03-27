@@ -2,11 +2,11 @@ SHELL := /bin/bash
 
 
 data/raw_datasets/${NUM}:
-	if [[ ${NUM: -1} == "M" ]]; then
-		python3 scripts/data_creation/dataset_creation.py --number_of_equations $${NUM:0:$${#NUM}-1}000000 --no-debug
-	elif [[ "${NUM: -1}" == "K" ]]; then
-		python3 scripts/data_creation/dataset_creation.py --number_of_equations $${NUM:0:$${#NUM}-1}000 --no-debug
-	else echo "Error only M or K is allowed"
+	if [[ $${NUM: -1} == "M" ]]; then \
+		python3 scripts/data_creation/dataset_creation.py --number_of_equations $${NUM:0:$${#NUM}-1}000000 --no-debug; \
+	elif [[ $${NUM: -1} == "K" ]]; then \
+		python3 scripts/data_creation/dataset_creation.py --number_of_equations $${NUM:0:$${#NUM}-1}000 --no-debug; \
+	else echo "Error only M or K is allowed"; \
 	fi
 		
 
