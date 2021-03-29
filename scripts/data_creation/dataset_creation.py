@@ -134,7 +134,10 @@ def creator(number_of_equations, debug):
         folder_path = "data/raw_datasets/debug" 
         
     Path(folder_path).mkdir(parents=True, exist_ok=True)
-    file_name = "{}K".format(int(number_of_equations / 1000))
+    if number_of_equations > 1e6:
+        file_name = "{}M".format(int(number_of_equations / 1e6))
+    else:
+        file_name = "{}K".format(int(number_of_equations / 1000))
     path = os.path.join(folder_path, file_name)
     with open(path, "wb") as file:
         pickle.dump(dataset, file)
