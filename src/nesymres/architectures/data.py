@@ -30,13 +30,14 @@ from typing import List
 import random
 from torch.distributions.uniform import Uniform
 from ..dclasses import DataModuleParams
-from ..dataset.generator import Generator
+from ..dataset.generator import Generator, UnknownSymPyOperator
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from nesymres.dclasses import Params, Dataset, Equation, DatasetParams
 from functools import partial
 from ordered_set import OrderedSet
+
 
 class NesymresDataset(data.Dataset):
     def __init__(
@@ -71,12 +72,16 @@ class NesymresDataset(data.Dataset):
             eq_string = eq.expr.format(**initial_consts)
 
         eq_sympy_infix = constants_to_placeholder(eq_string)
-        eq_sympy_prefix = Generator.sympy_to_prefix(eq_sympy_infix)
 
-        if not self.data_params.predict_c:
-            for j,i in enumerate(list(eq_sympy_prefix)):
-                if i == 'c' and list(eq_sympy_prefix)[j+1] != 'o':
-                    assert False
+        try:
+            eq_sympy_prefix = Generator.sympy_to_prefix(eq_sympy_infix)
+        except UnknownSymPyOperator as e:
+            print(e)
+
+        # if not self.data_params.predict_c:
+        #     for j,i in enumerate(list(eq_sympy_prefix)):
+        #         if i == 'c' and list(eq_sympy_prefix)[j+1] != 'o':
+        #             assert False
         
         try:
             t = tokenize(eq_sympy_prefix,self.data.word2id)
@@ -135,7 +140,7 @@ def tokens_padding(tokens):
 
 def number_of_support_points(p, type_of_sampling_points):
     if type_of_sampling_points == "constant":
-        curr_p = min(p)
+        curr_p = p
     elif type_of_sampling_points == "logarithm":
         curr_p = int(10 ** Uniform(1, math.log10(p)).sample())
     else:
