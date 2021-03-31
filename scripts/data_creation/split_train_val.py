@@ -84,6 +84,7 @@ def main(eqs_for_validation, data_path):
 
     keys = np.array(keys)
     rep = np.array(rep,dtype=np.float64)/np.array(len(data.eqs))
+    rep /= rep.sum()  # normalize
     print("Sampling Expressions for Validation")
     validation_indeces = []
     validation_entries = np.random.choice(keys,size=eqs_for_validation,replace=False,p=rep)

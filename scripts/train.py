@@ -19,22 +19,27 @@ from nesymres.utils import load_data
 import wandb
 from dataclass_dict_convert import dataclass_dict_convert 
 from pytorch_lightning.loggers import WandbLogger
+import hydra
 
-
-def main():
-    train_path = "data/datasets/100K/100K_train"
-    train_data = load_data(train_path)
-    val_data = load_data("data/datasets/100K/100K_val_subset")
+@hydra.main(config_name="train")
+def main(cfg):
+    train_data = load_data(hydra.utils.to_absolute_path(cfg.train_path))
+    val_data = load_data(hydra.utils.to_absolute_path(cfg.val_path))
     test_data = None
     wandb = None
     params = Params(datamodule_params_train=DataModuleParams(
                                 total_variables=list(train_data.total_variables), 
                                 total_coefficients=list(train_data.total_coefficients),
-                                predict_c=True),
+                                max_number_of_points=cfg.dataset_train.max_number_of_points,
+                                type_of_sampling_points=cfg.dataset_train.type_of_sampling_points,
+                                predict_c=cfg.dataset_train.predict_c),
                     datamodule_params_val=DataModuleParams(
                         total_variables=list(val_data.total_variables), 
                         total_coefficients=list(val_data.total_coefficients),
-                        predict_c=True))
+                        max_number_of_points=cfg.dataset_val.max_number_of_points,
+                        type_of_sampling_points=cfg.dataset_val.type_of_sampling_points,
+                        predict_c=cfg.dataset_val.predict_c),
+                        num_of_workers=cfg.num_of_workers)
     architecture_params = ArchitectureParams()
     data = DataModule(
         train_data,
@@ -53,7 +58,7 @@ def main():
     checkpoint_callback = ModelCheckpoint(
         monitor="val_loss", #/dataloader_idx_0",
         dirpath="Exp_weights/",                 
-        filename=str(train_path)+"_log_"+"-{epoch:02d}-{val_loss:.2f}",
+        filename=str(cfg.train_path)+"_log_"+"-{epoch:02d}-{val_loss:.2f}",
         mode="min",
     )
 

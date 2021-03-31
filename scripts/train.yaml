@@ -1,0 +1,14 @@
+train_path: data/datasets/20M/20M_train
+val_path: data/datasets/20M/20M_val_subset
+num_of_workers: 32
+
+
+dataset_train:
+  max_number_of_points: 2000
+  type_of_sampling_points: logarithm
+  predict_c: True
+
+dataset_val:
+  max_number_of_points: 500
+  type_of_sampling_points: constant
+  predict_c: True

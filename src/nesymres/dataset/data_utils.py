@@ -104,4 +104,7 @@ def evaluate_fun(args):
     except NameError as e:
         print(e)
         return []
+    except RuntimeError as e:
+        print(e)
+        return []
 
