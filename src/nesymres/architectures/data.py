@@ -4,6 +4,7 @@ import warnings
 import torch
 from torch.utils import data
 import math
+from nesymres.utils import load_metadata_hdf5
 from sympy.core.rules import Transform
 from sympy import sympify, Float, Symbol
 from multiprocessing import Manager
@@ -37,20 +38,22 @@ import pytorch_lightning as pl
 from nesymres.dclasses import Params, Dataset, Equation, DatasetParams
 from functools import partial
 from ordered_set import OrderedSet
+from pathlib import Path
 
 
 class NesymresDataset(data.Dataset):
     def __init__(
         self,
-        data: Dataset,
+        data_path: Path,
         data_params: DataModuleParams,
     ):  
-        m = Manager()
-        self.eqs = m.dict({i:eq for i, eq in enumerate(data.eqs)})
+        #m = Manager()
+        #self.eqs = m.dict({i:eq for i, eq in enumerate(data.eqs)})
         self.data_params = data_params
-        self.data = data
+        self.word2id = load_metadata_hdf5(hydra.utils.to_absolute_path(cfg.train_path)).word2id
 
     def __getitem__(self, index):
+        
         eq = self.eqs[index]
         code = types.FunctionType(eq.code, globals=globals(), name="f")
         initial_consts = {const: 1 if const[:2] == "cm" else 0 for const in eq.coeff_dict.keys()}
@@ -77,6 +80,7 @@ class NesymresDataset(data.Dataset):
             eq_sympy_prefix = Generator.sympy_to_prefix(eq_sympy_infix)
         except UnknownSymPyOperator as e:
             print(e)
+            return Equation(code=code,expr=[],coeff_dict=consts,variables=eq.variables,support=eq.support, valid=False)
 
         # if not self.data_params.predict_c:
         #     for j,i in enumerate(list(eq_sympy_prefix)):
@@ -239,9 +243,9 @@ def evaluate_and_wrap(eqs: List[Equation], cfg: DatasetParams):
 class DataModule(pl.LightningDataModule):
     def __init__(
         self,
-        data_train,
-        data_val,
-        data_test,
+        data_train_path,
+        data_val_path,
+        data_test_path,
         cfg: Params
     ):
         super().__init__()
@@ -253,30 +257,30 @@ class DataModule(pl.LightningDataModule):
         self.datamodule_params_val = cfg.datamodule_params_val
         self.datamodule_params_test = cfg.datamodule_params_test
         self.num_of_workers = cfg.num_of_workers
-        self.data_train = data_train
-        self.data_val = data_val #load_data(self.val_path)
-        self.data_test = data_test #load_data(self.test_path)
+        self.data_train_path = data_train_path
+        self.data_val_path = data_val_path #load_data(self.val_path)
+        self.data_test_path = data_test_path #load_data(self.test_path)
 
 
     def setup(self, stage=None):
         """called one ecah GPU separately - stage defines if we are at fit or test step"""
         # we set up only relevant datasets when stage is specified (automatically set by Pytorch-Lightning)
         if stage == "fit" or stage is None:
-            if self.data_train:
+            if self.data_train_path:
                 self.training_dataset = NesymresDataset(
-                    self.data_train,
+                    self.data_train_path,
                     self.datamodule_params_train,
                 )
             
-            if self.data_val:
+            if self.data_val_path:
                 self.validation_dataset = NesymresDataset(
-                    self.data_val,
+                    self.data_val_path,
                     self.datamodule_params_val,
                 )
             
-            if self.data_test:
+            if self.data_test_path:
                 self.test_dataset = NesymresDataset(
-                    self.data_test, self.datamodule_params_test
+                    self.data_test_path, self.datamodule_params_test
                 )
 
     def train_dataloader(self):

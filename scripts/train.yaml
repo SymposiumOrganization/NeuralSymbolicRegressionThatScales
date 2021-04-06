@@ -1,5 +1,5 @@
-train_path: data/datasets/20M/20M_train
-val_path: data/datasets/20M/20M_val_subset
+train_path: data/datasets/20M/20M_train_hdfs
+val_path: data/datasets/20M/20M_val_subset_hdfs
 num_of_workers: 32
 
 

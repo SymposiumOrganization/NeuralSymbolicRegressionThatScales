@@ -14,8 +14,7 @@ from typing import Tuple
 from nesymres.architectures.model import Model
 from nesymres.architectures.data import DataModule
 from nesymres.dclasses import Params, DataModuleParams, ArchitectureParams
-seed_everything(9)
-from nesymres.utils import load_data
+from nesymres.utils import load_metadata_hdf5
 import wandb
 from dataclass_dict_convert import dataclass_dict_convert 
 from pytorch_lightning.loggers import WandbLogger
@@ -23,8 +22,9 @@ import hydra
 
 @hydra.main(config_name="train")
 def main(cfg):
-    train_data = load_data(hydra.utils.to_absolute_path(cfg.train_path))
-    val_data = load_data(hydra.utils.to_absolute_path(cfg.val_path))
+    seed_everything(9)
+    train_data = load_metadata_hdf5(hydra.utils.to_absolute_path(cfg.train_path))
+    val_data = load_metadata_hdf5(hydra.utils.to_absolute_path(cfg.val_path))
     test_data = None
     wandb = None
     params = Params(datamodule_params_train=DataModuleParams(
@@ -42,8 +42,8 @@ def main(cfg):
                         num_of_workers=cfg.num_of_workers)
     architecture_params = ArchitectureParams()
     data = DataModule(
-        train_data,
-        val_data,
+        hydra.utils.to_absolute_path(cfg.train_path),
+        hydra.utils.to_absolute_path(cfg.val_path),
         None,
         cfg=params
     )
