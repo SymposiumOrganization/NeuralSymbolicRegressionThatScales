@@ -14,6 +14,7 @@ class Equation:
     tokenized: list = None
     valid: bool = True
     
+    
 
 @dataclass
 class DataModuleParams:
@@ -24,6 +25,7 @@ class DataModuleParams:
     predict_c: bool
     distribution_support: str
     input_normalization: bool
+    
 
 
 @dataclass
@@ -38,6 +40,7 @@ class Dataset:
     bin_ops: list
     rewrite_functions: list 
     unique_index: set = None
+    total_number_of_eqs: int = 0
     
     
     

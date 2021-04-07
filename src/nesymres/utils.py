@@ -5,7 +5,7 @@ import pickle
 import json
 from . import dclasses
 from .dataset import generator
-from .dclasses import Dataset
+from .dclasses import Dataset, Equation
 import h5py
 import os
 import numpy as np
@@ -28,11 +28,13 @@ def load_data(path_dataset) -> Dataset:
         data = pickle.load(f)
     return data
 
-def load_eqs(path_folder, eq ):
-    f = h5py.File(os.path.join(path_folder,"other.h5"), 'r')
-    dataset_metadata = f["other"]
+def load_eq(path_folder, idx, num_eqs_per_set) -> Equation:
+    index_file = str(int(idx/num_eqs_per_set))
+    f = h5py.File(os.path.join(path_folder,f"{index_file}.h5"), 'r')
+    dataset_metadata = f[str(idx - int(index_file)*int(num_eqs_per_set))]
     raw_metadata = np.array(dataset_metadata)
     metadata = pickle.loads(raw_metadata.tobytes())
+    f.close()
     return metadata
 
 def load_metadata_hdf5(path_folder) -> Dataset:

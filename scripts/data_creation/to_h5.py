@@ -8,6 +8,7 @@ from tqdm import tqdm
 import multiprocessing
 from pathlib import Path
 import os
+import click
 
 class H5FilesCreator():
     def __init__(self,path,dataset):
@@ -38,14 +39,22 @@ def create_hdf_files(d: Dataset, s: str) -> None:
                 h5_creator.create_single_hd5, enumerate(sets)
             ):
                 pbar.update()
+    total_number_of_eqs = len(d.eqs)
     d.eqs = []
+    d.total_number_of_eqs = total_number_of_eqs
     t_hf = h5py.File(os.path.join(path, "other" + ".h5") , 'w')
     t_hf.create_dataset("other", data=np.void(pickle.dumps(d)))
     t_hf.close()
 
-def main():
-    train_path = "data/datasets/20M/20M_train"
-    val_path = "data/datasets/20M/20M_val_subset"
+
+
+@click.command()
+@click.option("--folder_dataset", default="data/datasets/20M/")
+def main(folder_dataset):
+    train_path = os.path.join(folder_dataset,"hdf_train")
+    pathlib.Path(train_path).mkdir(parents=True, exist_ok=True) 
+    val_path = os.path.join(folder_dataset,"hdf_val_subset")
+    pathlib.Path(val_path).mkdir(parents=True, exist_ok=True) 
     print("Creating Validation h5")
     val_data = load_data(val_path)
     print("Validation Data Loaded, starting h5 creation")
@@ -54,6 +63,7 @@ def main():
     train_data = load_data(train_path)
     print("Training Data Loaded, starting h5 creation")
     create_hdf_files(train_data, train_path)
+    Path.touch(mode=0o666, exist_ok=True)
 
 if __name__=="__main__":
     main()

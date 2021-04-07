@@ -19,7 +19,13 @@ data/datasets/${NUM}/${NUM}_subset: data/datasets/${NUM}/.dirstamp
 data/datasets/${NUM}/${NUM}_filtered: data/raw_datasets/${NUM}
 	python3 scripts/data_creation/filter_from_already_existing.py --data_path data/raw_datasets/${NUM}
 
+data/datasets/${NUM}/.dirstamp_hdf:
+	python3 scripts/data_creation/to_h5.py --folder_dataset data/datasets/${NUM}
+
 data/benchmarks/.dirstamp: 
 	python3 scripts/data_creation/filter_from_already_existing.py --data_path data/raw_datasets/${NUM}
+
+
+
 
 train: data/datasets/${NUM}/${NUM}_subset, 

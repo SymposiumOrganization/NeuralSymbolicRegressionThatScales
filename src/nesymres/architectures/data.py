@@ -4,7 +4,7 @@ import warnings
 import torch
 from torch.utils import data
 import math
-from nesymres.utils import load_metadata_hdf5
+from nesymres.utils import load_metadata_hdf5, load_eq
 from sympy.core.rules import Transform
 from sympy import sympify, Float, Symbol
 from multiprocessing import Manager
@@ -39,6 +39,7 @@ from nesymres.dclasses import Params, Dataset, Equation, DatasetParams
 from functools import partial
 from ordered_set import OrderedSet
 from pathlib import Path
+import hydra
 
 
 class NesymresDataset(data.Dataset):
@@ -49,12 +50,16 @@ class NesymresDataset(data.Dataset):
     ):  
         #m = Manager()
         #self.eqs = m.dict({i:eq for i, eq in enumerate(data.eqs)})
+        other = load_metadata_hdf5(hydra.utils.to_absolute_path(data_path))
+        self.len = other.total_number_of_eqs
         self.data_params = data_params
-        self.word2id = load_metadata_hdf5(hydra.utils.to_absolute_path(cfg.train_path)).word2id
+        self.word2id = other.word2id
+        self.data_path = data_path
 
     def __getitem__(self, index):
         
-        eq = self.eqs[index]
+        eq = load_eq(self.data_path, index, 1e5)
+        #eq = self.eqs[index]
         code = types.FunctionType(eq.code, globals=globals(), name="f")
         initial_consts = {const: 1 if const[:2] == "cm" else 0 for const in eq.coeff_dict.keys()}
         consts = initial_consts.copy()
@@ -75,7 +80,6 @@ class NesymresDataset(data.Dataset):
             eq_string = eq.expr.format(**initial_consts)
 
         eq_sympy_infix = constants_to_placeholder(eq_string)
-
         try:
             eq_sympy_prefix = Generator.sympy_to_prefix(eq_sympy_infix)
         except UnknownSymPyOperator as e:
@@ -88,7 +92,7 @@ class NesymresDataset(data.Dataset):
         #             assert False
         
         try:
-            t = tokenize(eq_sympy_prefix,self.data.word2id)
+            t = tokenize(eq_sympy_prefix,self.word2id)
             curr = Equation(code=code,expr=sympify(eq_sympy_prefix),coeff_dict=consts,variables=eq.variables,support=eq.support, tokenized=t, valid=True)
         except:
             t = []
@@ -96,7 +100,7 @@ class NesymresDataset(data.Dataset):
         return curr
 
     def __len__(self):
-        return len(self.eqs)
+        return self.len
 
 def custom_collate_fn(eqs: List[Equation], cfg: DatasetParams = None):
     filtered_eqs = [eq for eq in eqs if eq.valid]

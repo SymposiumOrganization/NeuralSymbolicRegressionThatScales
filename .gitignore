@@ -6,3 +6,4 @@ lightning_logs/*
 Exp_weights/*
 wandb/*
 *.log
+outputs/*
