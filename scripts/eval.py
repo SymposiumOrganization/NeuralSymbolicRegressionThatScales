@@ -47,8 +47,10 @@ def main(cfg):
     fitfunc = partial(model.fitfunc,cfg_params=params_fit)
 
     for i in data.test_dataloader():
-        X,y = i[0][:,:-1], i[0][:,-1:]
-        fitfunc(X,y)        
+        X,y, expr = i[0][:,:-1], i[0][:,-1:], i[2]
+        breakpoint()
+        # output = fitfunc(X,y)        
+        # breakpoint()
 
 if __name__ == "__main__":
     #os.environ["CUDA_VISIBLE_DEVICES"] = "0,2"  # ,1,2,4,5,6,7" Change Me

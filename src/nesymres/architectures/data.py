@@ -47,6 +47,7 @@ class NesymresDataset(data.Dataset):
         self,
         data_path: Path,
         data_params: DataModuleParams,
+        mode: str
     ):  
         #m = Manager()
         #self.eqs = m.dict({i:eq for i, eq in enumerate(data.eqs)})
@@ -55,6 +56,7 @@ class NesymresDataset(data.Dataset):
         self.data_params = data_params
         self.word2id = other.word2id
         self.data_path = data_path
+        self.mode = mode
 
     def __getitem__(self, index):
         
@@ -80,6 +82,8 @@ class NesymresDataset(data.Dataset):
             eq_string = eq.expr.format(**initial_consts)
 
         eq_sympy_infix = constants_to_placeholder(eq_string)
+        # if self.mode == "train":
+        #     breakpoint()
         try:
             eq_sympy_prefix = Generator.sympy_to_prefix(eq_sympy_infix)
         except UnknownSymPyOperator as e:
@@ -105,7 +109,7 @@ class NesymresDataset(data.Dataset):
 def custom_collate_fn(eqs: List[Equation], cfg: DatasetParams = None):
     filtered_eqs = [eq for eq in eqs if eq.valid]
     res, tokens = evaluate_and_wrap(filtered_eqs, cfg)
-    return res, tokens
+    return res, tokens, [eq.expr for eq in filtered_eqs]
 
 
 def constants_to_placeholder(s,symbol="c"):
@@ -274,17 +278,20 @@ class DataModule(pl.LightningDataModule):
                 self.training_dataset = NesymresDataset(
                     self.data_train_path,
                     self.datamodule_params_train,
+                    mode="train"
                 )
             
             if self.data_val_path:
                 self.validation_dataset = NesymresDataset(
                     self.data_val_path,
                     self.datamodule_params_val,
+                    mode="val"
                 )
             
             if self.data_test_path:
                 self.test_dataset = NesymresDataset(
-                    self.data_test_path, self.datamodule_params_test
+                    self.data_test_path, self.datamodule_params_test,
+                    mode="test"
                 )
 
     def train_dataloader(self):

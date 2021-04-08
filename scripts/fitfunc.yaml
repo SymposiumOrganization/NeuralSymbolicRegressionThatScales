@@ -1,0 +1,13 @@
+test_path: data/datasets/20M/20M_val_subset_hdfs
+num_of_workers: 0
+
+
+# dataset_train:
+#   max_number_of_points: 2000
+#   type_of_sampling_points: logarithm
+#   predict_c: True
+
+dataset_test:
+  max_number_of_points: 500
+  type_of_sampling_points: constant
+  predict_c: True

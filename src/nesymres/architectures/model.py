@@ -321,7 +321,6 @@ class Model(pl.LightningModule):
             # self.log(
             #     "tot", cnt, on_step=True, on_epoch=True, prog_bar=True, logger=True
             # )
-            breakpoint()
             output = {'all_bfgs_preds':P_bfgs, 'all_bfgs_loss':L_bfgs, 'best_bfgs_preds':best_preds_bfgs, 'best_bfgs_loss':best_L_bfgs}
             return output
             # else:
