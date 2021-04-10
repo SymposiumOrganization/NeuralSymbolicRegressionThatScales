@@ -299,33 +299,8 @@ class Model(pl.LightningModule):
             best_preds_bfgs.append(P_bfgs[np.nanargmin(L_bfgs)])
             best_L_bfgs.append(np.nanmin(L_bfgs))
 
-            #tgt_len = torch.zeros(bs, device=self.device)  # src_len.new(bs)
-            # best = []
-            # for i, hypotheses in enumerate(generated_hyps):
-            #     breakpoint()
-            #     best_hyp = max(hypotheses.hyp, key=lambda x: x[0])[1]
-            #     tgt_len[i] = len(best_hyp) + 1  # +1 for the <EOS> symbol
-            #     best.append(best_hyp)
-
-            # self.log(
-            #     "score",
-            #     perc * 100 / cnt,
-            #     on_step=True,
-            #     on_epoch=True,
-            #     prog_bar=True,
-            #     logger=True,
-            # )
-            # self.log(
-            #     "correct", perc, on_step=True, on_epoch=True, prog_bar=True, logger=True
-            # )
-            # self.log(
-            #     "tot", cnt, on_step=True, on_epoch=True, prog_bar=True, logger=True
-            # )
             output = {'all_bfgs_preds':P_bfgs, 'all_bfgs_loss':L_bfgs, 'best_bfgs_preds':best_preds_bfgs, 'best_bfgs_loss':best_L_bfgs}
             return output
-            # else:
-            #     output = {'all_skel_outputs':P, 'all_skel_loss':L, 'best_skel_outputs':best_preds, 'best_skel_loss':best_L}
-            #     return output
 
 
 

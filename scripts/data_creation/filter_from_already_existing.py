@@ -59,7 +59,7 @@ def return_numerically_different_from_validation(data,disjoint_sets, validation_
 @click.option("--csv_path", prompt='Insert the csv path', default="data/csv/ours_all_flavours.csv")
 def main(data_path,csv_path):
     print("Started Loading Data")
-    data = load_data(data_path)
+    data = load_dataset(data_path)
     validation = pd.read_csv(csv_path)
     print("Loading Data Complete")
 

@@ -19,7 +19,7 @@ import hydra
 
 @hydra.main(config_name="fitfunc")
 def main(cfg):
-    model_path = "/home/gem/repos/NeuralSymbolicRegressionThatScales/outputs/2021-04-07/07-09-01/Exp_weights/data/datasets/20M/20M_train_hdfs_log_-epoch=00-val_loss=5.96.ckpt"
+    model_path = hydra.utils.to_absolute_path(cfg.model_path)
     test_data = load_metadata_hdf5(hydra.utils.to_absolute_path(cfg.test_path))
     data_params = Params(datamodule_params_test=DataModuleParams(
                                 total_variables=list(test_data.total_variables), 
@@ -46,10 +46,20 @@ def main(cfg):
     model.cuda()
     fitfunc = partial(model.fitfunc,cfg_params=params_fit)
 
-    for i in data.test_dataloader():
-        X,y = i[0][:,:-1], i[0][:,-1:]
-        fitfunc(X,y)        
-
+    for batch in data.test_dataloader():
+        if not len(batch[0]):
+            continue
+        eq = NNEquation(batch[0][0],batch[1][0],batch[2][0])
+        X,y = eq.numerical_values[None,:-1],eq.numerical_values[None,-1:] 
+        if len(X.reshape(-1)) == 0:
+            print("Skipping equation because no points are valid")
+            continue
+        print(f"Testing expressions {eq.expr}")
+        output = fitfunc(X,y) 
+        print(f"GT: {eq.expr}")
+        print(f'Prediction: {output["best_bfgs_preds"]}')
+        print("Evaluating")
+        
 if __name__ == "__main__":
     #os.environ["CUDA_VISIBLE_DEVICES"] = "0,2"  # ,1,2,4,5,6,7" Change Me
     #print(f"Starting a run with {config}")

@@ -42,7 +42,7 @@ def choose_eqs(data):
 @click.option("--num_target_eq", default=100)
 def main(val_path,num_target_eq):
     print("Started Loading Data")
-    data_val = load_data(val_path)
+    data_val = load_dataset(val_path)
     data_val.eqs = [x for idx, x in enumerate(data_val.eqs) if idx in data_val.unique_index]
     to_keep = choose_eqs(data_val)[:num_target_eq]
     eqs = [data_val.eqs[x] for x in to_keep]

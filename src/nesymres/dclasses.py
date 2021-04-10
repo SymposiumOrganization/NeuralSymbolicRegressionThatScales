@@ -3,6 +3,7 @@ from types import CodeType
 from typing import List, Tuple
 from torch.distributions import Uniform, Normal, Distribution
 from dataclass_dict_convert import dataclass_dict_convert
+import torch
 
 @dataclass
 class Equation:
@@ -14,7 +15,12 @@ class Equation:
     tokenized: list = None
     valid: bool = True
     
-    
+@dataclass 
+class NNEquation:
+    numerical_values: torch.tensor
+    tokenized: torch.tensor
+    expr: List[str]
+
 
 @dataclass
 class DataModuleParams:

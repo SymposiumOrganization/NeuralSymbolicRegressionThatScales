@@ -30,7 +30,7 @@ import types
 from typing import List
 import random
 from torch.distributions.uniform import Uniform
-from ..dclasses import DataModuleParams
+from ..dclasses import DataModuleParams, NNEquation
 from ..dataset.generator import Generator, UnknownSymPyOperator
 import torch.nn as nn
 import torch.nn.functional as F
@@ -53,6 +53,7 @@ class NesymresDataset(data.Dataset):
         #self.eqs = m.dict({i:eq for i, eq in enumerate(data.eqs)})
         other = load_metadata_hdf5(hydra.utils.to_absolute_path(data_path))
         self.len = other.total_number_of_eqs
+        self.eqs_per_hdf = other.eqs_per_hdf
         self.data_params = data_params
         self.word2id = other.word2id
         self.data_path = data_path
@@ -60,8 +61,7 @@ class NesymresDataset(data.Dataset):
 
     def __getitem__(self, index):
         
-        eq = load_eq(self.data_path, index, 1e5)
-        #eq = self.eqs[index]
+        eq = load_eq(self.data_path, index, self.eqs_per_hdf)
         code = types.FunctionType(eq.code, globals=globals(), name="f")
         initial_consts = {const: 1 if const[:2] == "cm" else 0 for const in eq.coeff_dict.keys()}
         consts = initial_consts.copy()
@@ -82,31 +82,26 @@ class NesymresDataset(data.Dataset):
             eq_string = eq.expr.format(**initial_consts)
 
         eq_sympy_infix = constants_to_placeholder(eq_string)
-        # if self.mode == "train":
-        #     breakpoint()
         try:
             eq_sympy_prefix = Generator.sympy_to_prefix(eq_sympy_infix)
         except UnknownSymPyOperator as e:
             print(e)
             return Equation(code=code,expr=[],coeff_dict=consts,variables=eq.variables,support=eq.support, valid=False)
 
-        # if not self.data_params.predict_c:
-        #     for j,i in enumerate(list(eq_sympy_prefix)):
-        #         if i == 'c' and list(eq_sympy_prefix)[j+1] != 'o':
-        #             assert False
-        
+
         try:
             t = tokenize(eq_sympy_prefix,self.word2id)
-            curr = Equation(code=code,expr=sympify(eq_sympy_prefix),coeff_dict=consts,variables=eq.variables,support=eq.support, tokenized=t, valid=True)
+            curr = Equation(code=code,expr=eq_sympy_infix,coeff_dict=consts,variables=eq.variables,support=eq.support, tokenized=t, valid=True)
         except:
             t = []
-            curr = Equation(code=code,expr=sympify(eq_sympy_prefix),coeff_dict=consts,variables=eq.variables,support=eq.support, valid=False)
+            curr = Equation(code=code,expr=eq_sympy_infix,coeff_dict=consts,variables=eq.variables,support=eq.support, valid=False)
+
         return curr
 
     def __len__(self):
         return self.len
 
-def custom_collate_fn(eqs: List[Equation], cfg: DatasetParams = None):
+def custom_collate_fn(eqs: List[Equation], cfg: DatasetParams = None) -> NNEquation:
     filtered_eqs = [eq for eq in eqs if eq.valid]
     res, tokens = evaluate_and_wrap(filtered_eqs, cfg)
     return res, tokens, [eq.expr for eq in filtered_eqs]
@@ -217,6 +212,8 @@ def evaluate_and_wrap(eqs: List[Equation], cfg: DatasetParams):
         except NameError as e:
             # print(e)
             cond0.append(False)
+        except RuntimeError as e:
+            cond0.append(False)
         # except:
         #     breakpoint()
     tokens_eqs = tokens_eqs[cond0]
@@ -266,8 +263,8 @@ class DataModule(pl.LightningDataModule):
         self.datamodule_params_test = cfg.datamodule_params_test
         self.num_of_workers = cfg.num_of_workers
         self.data_train_path = data_train_path
-        self.data_val_path = data_val_path #load_data(self.val_path)
-        self.data_test_path = data_test_path #load_data(self.test_path)
+        self.data_val_path = data_val_path 
+        self.data_test_path = data_test_path 
 
 
     def setup(self, stage=None):
@@ -331,3 +328,5 @@ class DataModule(pl.LightningDataModule):
         )
 
         return testloader
+
+

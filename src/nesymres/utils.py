@@ -22,7 +22,7 @@ def load_numpy_data_data(f) -> Dataset:
     data = pickle.load(f)
     return data
 
-def load_data(path_dataset) -> Dataset:
+def load_dataset(path_dataset) -> Dataset:
     copyreg.pickle(types.CodeType, code_pickler, code_unpickler)
     with open(path_dataset, "rb") as f:
         data = pickle.load(f)

@@ -1,0 +1,7 @@
+model_name: nesymres
+checkpoint_path:  outputs/2021-04-09/08-58-27/Exp_weights/data/datasets/20M/hdf_train_log_-epoch=02-val_loss=0.47.ckpt
+beam_size: 10
+bfgs: True
+bfgs_n_restarts: 10
+complexity_reg_coef: 0.001
+train_bfgs: 0.5

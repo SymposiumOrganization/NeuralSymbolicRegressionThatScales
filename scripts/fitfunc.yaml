@@ -1,7 +1,12 @@
-test_path: data/datasets/20M/20M_val_subset_hdfs
+train_path: data/datasets/20M/hdf_train
+test_path: data/datasets/20M/hdf_val_subset
 num_of_workers: 0
 
-
+model_path: "outputs/2021-04-09/08-58-27/Exp_weights/data/datasets/20M/hdf_train_log_-epoch=02-val_loss=0.47.ckpt"
+fitparams:
+  beam_size: 10 
+  beamsearch:
+    add_coefficients_if_not_existing: False
 # dataset_train:
 #   max_number_of_points: 2000
 #   type_of_sampling_points: logarithm

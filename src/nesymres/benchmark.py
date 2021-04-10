@@ -1,7 +1,8 @@
 from .dclasses import Equation
+from .utils import load_dataset
 
 def evaluate_model(model_predict,
-                   benchmark_name,
+                   benchmark_path,
                    equation_idx,
                    num_test_points,
                    pointwise_acc_rtol,
@@ -10,9 +11,9 @@ def evaluate_model(model_predict,
     model_predict is a callable that takes an X of shape
     (n_datapoints, n_variables) and returns scalar predictions
     """
-
-    gt_equation, num_variables, supp = load_equation(benchmark_name,
-                                                     equation_idx)
+    dataset = load_dataset(path)
+    gt_equation, num_variables, supp = get_robust_data(eq,
+                                                     cfg)
     print(f'gt_equation: {gt_equation}')
 
     metrics = {'gt_equation': gt_equation,
@@ -108,7 +109,8 @@ def get_data(eq: Equation, cfg):
     return X, y
 
 
-def load_equation(eq: Equation, cfg):
+
+def get_robust_data(eq: Equation, idx, cfg):
     n_attempts_max = 100
     X, y = get_data(eq, cfg)
     for _ in range(n_attempts_max):
@@ -123,3 +125,5 @@ def load_equation(eq: Equation, cfg):
         raise ValueError('Could not sample valid points for equation '
                          f'{gt_equation} supp={supp}')
     return X, y
+
+    

@@ -1,0 +1,5 @@
+default:
+  model: nesymres
+  datasets: ai_feymann
+dataset:
+eq:

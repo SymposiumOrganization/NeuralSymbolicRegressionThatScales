@@ -66,7 +66,7 @@ def group_numerical_indetical_eqs(data,disjoint_sets):
 @click.option("--data_path", default=None)
 def main(eqs_for_validation, data_path):
     print("Started Loading Data")
-    data = load_data(data_path)
+    data = load_dataset(data_path)
     if len(data.eqs) < eqs_for_validation:
         raise ("Not enough training equations")
     print("Finding Unique Expressions")

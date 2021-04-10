@@ -141,15 +141,15 @@ def bfgs(pred_str, X, y, cfg):#n_restarts, env, NMSE=True, idx_remove =True, nor
     else:
         raise KeyError
     
-    print('Loss constructed, starting BFGS optmization...') 
+    print('Loss constructed, starting new BFGS optmization...') 
 
     # Lists where all restarted will be appended
     F_loss = []
     consts_ = []
     funcs = []
     symbols = {i: sp.Symbol(f'c{i}') for i in range(candidate.count("constant"))}
+    
     for i in range(cfg.bfgs.n_restarts):
-        print('BFGS optimization: iteration # ', i)
         # Compute number of coefficients
         x0 = np.random.randn(len(symbols))
         s = list(symbols.values())
@@ -169,8 +169,12 @@ def bfgs(pred_str, X, y, cfg):#n_restarts, env, NMSE=True, idx_remove =True, nor
         final_loss = np.mean(np.square(sp.lambdify(",".join(cfg.total_variables), final)(**values)-y).numpy())
         F_loss.append(final_loss)
          #early stopping
-        if final_loss < 1e-8:
-            return (final, fun_timed.x,final_loss,example)
-    k_best = np.nanargmin(F_loss)
+        # if final_loss < 1e-8:
+        #     return (final, fun_timed.x,final_loss,example)
+    try:
+        k_best = np.nanargmin(F_loss)
+    except ValueError:
+        print("All-Nan slice encountered")
+        k_best = 0
     return funcs[k_best], consts_[k_best], F_loss[k_best], expr
             
