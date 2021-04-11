@@ -16,10 +16,11 @@ data/datasets/${NUM}/.dirstamp: data/raw_datasets/${NUM}
 data/datasets/${NUM}/${NUM}_subset: data/datasets/${NUM}/.dirstamp
 	python3 scripts/data_creation/filter_validation.py --val_path data/datasets/${NUM}/${NUM}_val
 
+#This is used for filtering a small number from an already existing dataset
 data/datasets/${NUM}/${NUM}_filtered: data/raw_datasets/${NUM}
 	python3 scripts/data_creation/filter_from_already_existing.py --data_path data/raw_datasets/${NUM}
 
-data/datasets/${NUM}/.dirstamp_hdf:
+data/datasets/${NUM}/.dirstamp_hdf: data/datasets/${NUM}/${NUM}_subset
 	python3 scripts/data_creation/to_h5.py --folder_dataset data/datasets/${NUM}
 
 data/benchmarks/.dirstamp: 

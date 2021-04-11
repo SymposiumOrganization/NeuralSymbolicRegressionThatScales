@@ -26,7 +26,7 @@ class H5FilesCreator():
 def create_hdf_files(d: Dataset, s: str) -> None:
     num_eqs_per_set = int(1e5)
     n_datasets = int(len(d.eqs) // num_eqs_per_set) + 1
-    path = Path(s+"_hdfs")
+    path = Path(s)
     h5_creator = H5FilesCreator(path, dataset=d)
     counter = 0
     path.mkdir(mode=0o777, parents=True, exist_ok=True)

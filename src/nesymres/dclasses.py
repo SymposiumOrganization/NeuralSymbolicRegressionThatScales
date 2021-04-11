@@ -106,16 +106,16 @@ class ArchitectureParams:
 
 
 
-@dataclass
-class Params:
-    datamodule_params_train: DataModuleParams = DataModuleParams()
-    datamodule_params_val: DataModuleParams = DataModuleParams()
-    datamodule_params_test: DataModuleParams = DataModuleParams()
-    num_of_workers: int = 0
-    max_epochs: int = 200
-    val_check_interval: float = 0.2
-    precision: int = 16
-    batch_size: int = 100
+# @dataclass
+# class Params:
+#     datamodule_params_train: DataModuleParams = DataModuleParams()
+#     datamodule_params_val: DataModuleParams = DataModuleParams()
+#     datamodule_params_test: DataModuleParams = DataModuleParams()
+#     num_of_workers: int = 0
+#     max_epochs: int = 200
+#     val_check_interval: float = 0.2
+#     precision: int = 16
+#     batch_size: int = 100
 
 
 
@@ -141,10 +141,10 @@ class FitParams:
     bfgs: BFGSParams = BFGSParams()
     beam_size: int = 3
     
-@Params
-class ConstantsOptions:
-    max_constants: int
-    min_additive_constant_support: float
-    max_additive_constant_support: float 
-    min_multiplicative_constant_support: float
-    max_multiplicative_constant_support: float
+# @dataclass
+# class ConstantsOptions:
+#     max_constants: int
+#     min_additive_constant_support: float
+#     max_additive_constant_support: float 
+#     min_multiplicative_constant_support: float
+#     max_multiplicative_constant_support: float

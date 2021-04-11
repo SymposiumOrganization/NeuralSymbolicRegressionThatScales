@@ -11,7 +11,7 @@ import types
 from numpy import log, cosh, sinh, exp, cos, tanh, sqrt, sin, tan, arctan, nan, pi, e, arcsin, arccos
 from sympy import sympify,lambdify, Symbol
 from sympy import Float
-from ..dclasses import Equation, ConstantsOptions
+from ..dclasses import Equation
 
 
 def evaluate_validation_set(validation_set, support) -> set:
@@ -120,9 +120,9 @@ def sample_constants(eq: Equation, cfg) -> dict:
     symbols_used = random.sample(set(eq.coeff_dict.keys()), used_consts)
     for si in symbols_used:
         if si[:2] == "ca":
-            consts[si] = Uniform(cfg.additive.min, cfg.additive.max).sample()
+            consts[si] = round(float(Uniform(cfg.additive.min, cfg.additive.max).sample()),3)
         elif si[:2] == "cm":
-            consts[si] = Uniform(cfg.multiplicative.min, cfg.multiplicative.max).sample()
+            consts[si] = round(float(Uniform(cfg.additive.min, cfg.additive.max).sample()),3)
         else:
             raise KeyError
     return consts

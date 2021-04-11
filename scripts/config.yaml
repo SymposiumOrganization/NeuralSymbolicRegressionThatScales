@@ -1,6 +1,7 @@
 train_path: data/datasets/20M/hdf_train
 val_path: data/datasets/20M/hdf_val_subset
 test_path: data/datasets/20M/hdf_val_subset
+
 wandb: 
 num_of_workers: 64
 batch_size: 

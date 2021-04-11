@@ -1,5 +1,5 @@
 import numpy as np
-from nesymres.utils import code_unpickler, code_pickler, load_data
+from nesymres.utils import code_unpickler, code_pickler, load_dataset
 import click
 import pickle
 from nesymres import dclasses
