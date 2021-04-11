@@ -13,39 +13,59 @@ from dataclasses import dataclass
 from typing import Tuple
 from nesymres.architectures.model import Model
 from nesymres.architectures.data import DataModule
-from nesymres.dclasses import Params, DataModuleParams, ArchitectureParams
+from nesymres.dclasses import Params, DataModuleParams, ArchitectureParams, ConstantsOptions
 from nesymres.utils import load_metadata_hdf5
 import wandb
 from dataclass_dict_convert import dataclass_dict_convert 
 from pytorch_lightning.loggers import WandbLogger
 import hydra
+from pathlib import Path
 
-@hydra.main(config_name="train")
+@hydra.main(config_name="config")
 def main(cfg):
     seed_everything(9)
-    train_data = load_metadata_hdf5(hydra.utils.to_absolute_path(cfg.train_path))
-    val_data = load_metadata_hdf5(hydra.utils.to_absolute_path(cfg.val_path))
-    test_data = None
-    wandb = None
-    params = Params(datamodule_params_train=DataModuleParams(
-                                total_variables=list(train_data.total_variables), 
-                                total_coefficients=list(train_data.total_coefficients),
-                                max_number_of_points=cfg.dataset_train.max_number_of_points,
-                                type_of_sampling_points=cfg.dataset_train.type_of_sampling_points,
-                                predict_c=cfg.dataset_train.predict_c),
-                    datamodule_params_val=DataModuleParams(
-                        total_variables=list(val_data.total_variables), 
-                        total_coefficients=list(val_data.total_coefficients),
-                        max_number_of_points=cfg.dataset_val.max_number_of_points,
-                        type_of_sampling_points=cfg.dataset_val.type_of_sampling_points,
-                        predict_c=cfg.dataset_val.predict_c),
-                        num_of_workers=cfg.num_of_workers)
+    train_path = Path(hydra.utils.to_absolute_path(cfg.train_path))
+    val_path = Path(hydra.utils.to_absolute_path(cfg.val_path))
+    # test_data = None
+    # wandb = None
+
+    # train_constant =  ConstantsOptions(max_constants=cfg.dataset_train.num_constants,
+    #                  min_additive_constant_support=cfg.dataset_train.additive.min,
+    #                  min_additive_constant_support=cfg.dataset_train.additive.min,
+    #                 min_additive_constant_support=cfg.dataset_train.additive.min,
+    #                 min_additive_constant_support=cfg.dataset_train.additive.min)
+
+    #     train_constant =  ConstantsOptions(max_constants=cfg.dataset_train.num_constants,
+    #                  min_additive_constant_support=cfg.dataset_train.additive.min,
+    #                  min_additive_constant_support=cfg.dataset_train.additive.min,
+    #                 min_additive_constant_support=cfg.dataset_train.additive.min,
+    #                 min_additive_constant_support=cfg.dataset_train.additive.min)
+
+
+    # params = Params(datamodule_params_train=DataModuleParams(
+    #                             #constant_options= train_constant
+    #                             total_variables=list(train_data.total_variables), 
+    #                             total_coefficients=list(train_data.total_coefficients),
+    #                             # max_number_of_points=cfg.dataset_train.max_number_of_points,
+    #                             # type_of_sampling_points=cfg.dataset_train.type_of_sampling_points,
+    #                             # predict_c=cfg.dataset_train.predict_c,
+    #                             ),
+
+    #                 datamodule_params_val=DataModuleParams(
+    #                     # constant_options= train_constant
+    #                     total_variables=list(val_data.total_variables), 
+    #                     total_coefficients=list(val_data.total_coefficients)),
+    #                     # max_number_of_points=cfg.dataset_val.max_number_of_points,
+    #                     # type_of_sampling_points=cfg.dataset_val.type_of_sampling_points,
+    #                     # predict_c=cfg.dataset_val.predict_c),
+    #                     num_of_workers=cfg.num_of_workers)
+
     architecture_params = ArchitectureParams()
     data = DataModule(
-        hydra.utils.to_absolute_path(cfg.train_path),
-        hydra.utils.to_absolute_path(cfg.val_path),
-        None,
-        cfg=params
+        # hydra.utils.to_absolute_path(cfg.train_path),
+        # hydra.utils.to_absolute_path(cfg.val_path),
+        # None,
+        cfg
     )
     model = Model(cfg=architecture_params)
     if wandb:
@@ -58,15 +78,16 @@ def main(cfg):
     checkpoint_callback = ModelCheckpoint(
         monitor="val_loss", #/dataloader_idx_0",
         dirpath="Exp_weights/",                 
-        filename=str(cfg.train_path)+"_log_"+"-{epoch:02d}-{val_loss:.2f}",
+        filename=train_path.stem+"_log_"+"-{epoch:02d}-{val_loss:.2f}",
         mode="min",
     )
 
     trainer = pl.Trainer(
         distributed_backend="ddp",
         gpus=-1,
-        max_epochs=params.max_epochs,
-        val_check_interval=params.val_check_interval,
+        max_epochs=cfg.epochs,
+        val_check_interval=cfg.val_check_interval,
+        precision=cfg.precision,
         logger=wandb_logger,
         callbacks=[checkpoint_callback],
     )

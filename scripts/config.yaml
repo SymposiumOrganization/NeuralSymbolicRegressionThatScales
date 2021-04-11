@@ -1,0 +1,57 @@
+train_path: data/datasets/20M/hdf_train
+val_path: data/datasets/20M/hdf_val_subset
+test_path: data/datasets/20M/hdf_val_subset
+wandb: 
+num_of_workers: 64
+batch_size: 
+epochs: 200
+val_check_interval: 0.2
+precision: 16
+
+dataset_train:
+  max_number_of_points: 2000
+  type_of_sampling_points: logarithm
+  predict_c: False
+  fun_support:
+    max: 10
+    min: -10
+  constants:
+    num_constants: 3
+    additive:
+      max: 2
+      min: -2
+    multiplicative:
+      max: 5
+      min: 0.1
+
+dataset_val:
+  max_number_of_points: 500
+  type_of_sampling_points: constant
+  predict_c: False
+  fun_support:
+    max: 10
+    min: -10
+  constants:
+    num_constants: 3
+    additive:
+      max: 2
+      min: -2
+    multiplicative:
+      max: 5
+      min: 0.1
+
+dataset_test:
+  max_number_of_points: 500
+  type_of_sampling_points: constant
+  predict_c: False
+  fun_support:
+    max: 10
+    min: -10
+  constants:
+    num_constants: 3
+    additive:
+      max: 2
+      min: -2
+    multiplicative:
+      max: 5
+      min: 0.1

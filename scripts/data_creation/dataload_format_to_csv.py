@@ -14,21 +14,32 @@ from nesymres import dclasses
 from pathlib import Path
 import pickle
 from sympy import lambdify
-from nesymres.utils import create_env
-from nesymres.utils import code_unpickler, code_pickler
+from nesymres.utils import create_env, load_dataset
+from nesymres.dataset import data_utils 
 import copyreg
 import types
 from itertools import chain
 import traceback
 import sympy as sp
 from nesymres.dataset.sympy_utils import add_multiplicative_constants, add_additive_constants
+import random
+import hydra
 
 
-@click.command()
-@click.option("dataset_path", default="dataset_path")
-def converter(folder_csv):
-    csv_availables = os.listdir(folder_csv)
-    for file_csv in csv_availables:
+@hydra.main(configconfig_name="../config")
+def converter(cfg):
+    # csv_availables = os.listdir(folder_csv)
+    # for file_csv in csv_availables:
+    df = pd.DataFrame()
+    dataset = load_dataset(hydra.utils.to_absolute_path(cfg.test_path))
+    for eq in dataset.eqs:
+        cfg_const = cfg.dataset_test.constants
+        dict_const = data_utils.sample_constants(eq,cfg_const)
+        # num_constant = random.randint(0,
+        breakpoint()
+        df 
+    
+    for i in range(4):
         path_csv = os.path.join(folder_csv,file_csv)
         validation = pd.read_csv(path_csv)
         copyreg.pickle(types.CodeType, code_pickler, code_unpickler) #Needed for serializing code objects

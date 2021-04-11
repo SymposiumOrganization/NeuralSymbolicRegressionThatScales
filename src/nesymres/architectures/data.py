@@ -35,7 +35,7 @@ from ..dataset.generator import Generator, UnknownSymPyOperator
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
-from nesymres.dclasses import Params, Dataset, Equation, DatasetParams
+from nesymres.dclasses import Params, Dataset, Equation, DatasetParams, ConstantsOptions
 from functools import partial
 from ordered_set import OrderedSet
 from pathlib import Path
@@ -46,7 +46,7 @@ class NesymresDataset(data.Dataset):
     def __init__(
         self,
         data_path: Path,
-        data_params: DataModuleParams,
+        cfg,
         mode: str
     ):  
         #m = Manager()
@@ -58,23 +58,14 @@ class NesymresDataset(data.Dataset):
         self.word2id = other.word2id
         self.data_path = data_path
         self.mode = mode
+        self.cfg = cfg
 
     def __getitem__(self, index):
         
         eq = load_eq(self.data_path, index, self.eqs_per_hdf)
         code = types.FunctionType(eq.code, globals=globals(), name="f")
-        initial_consts = {const: 1 if const[:2] == "cm" else 0 for const in eq.coeff_dict.keys()}
-        consts = initial_consts.copy()
         
-        used_consts = random.randint(0, min(len(eq.coeff_dict),self.data_params.constant_degree_of_freedom))
-        symbols_used = random.sample(set(eq.coeff_dict.keys()), used_consts)
-        for si in symbols_used:
-            if si[:2] == "ca":
-                consts[si] = Uniform(self.data_params.additive_constant_support[0], self.data_params.additive_constant_support[1]).sample()
-            elif si[:2] == "cm":
-                consts[si] = Uniform(self.data_params.multiplicative_constant_support[0], self.data_params.multiplicative_constant_support[1]).sample()
-            else:
-                raise KeyError
+        consts = sample_constants(eq, self.constant_options)
 
         if self.data_params.predict_c:
             eq_string = eq.expr.format(**consts)
@@ -248,23 +239,22 @@ def evaluate_and_wrap(eqs: List[Equation], cfg: DatasetParams):
 class DataModule(pl.LightningDataModule):
     def __init__(
         self,
-        data_train_path,
-        data_val_path,
-        data_test_path,
-        cfg: Params
+        # data_train_path,
+        # data_val_path,
+        # data_test_path,
+        cfg
     ):
         super().__init__()
+        self.cfg = cfg
         # self.val_path = val_path
         # self.test_path = test_path
         #self.env_path = env_path
-        self.batch = cfg.batch_size
-        self.datamodule_params_train = cfg.datamodule_params_train
-        self.datamodule_params_val = cfg.datamodule_params_val
-        self.datamodule_params_test = cfg.datamodule_params_test
-        self.num_of_workers = cfg.num_of_workers
-        self.data_train_path = data_train_path
-        self.data_val_path = data_val_path 
-        self.data_test_path = data_test_path 
+        # self.datamodule_params_train = cfg.datamodule_params_train
+        # self.datamodule_params_val = cfg.datamodule_params_val
+        # self.datamodule_params_test = cfg.datamodule_params_test
+        # self.data_train_path = data_train_path
+        # self.data_val_path = data_val_path 
+        # self.data_test_path = data_test_path 
 
 
     def setup(self, stage=None):
@@ -273,21 +263,21 @@ class DataModule(pl.LightningDataModule):
         if stage == "fit" or stage is None:
             if self.data_train_path:
                 self.training_dataset = NesymresDataset(
-                    self.data_train_path,
-                    self.datamodule_params_train,
+                    self.cfg.train_path,
+                    self.cfg.dataset_train,
                     mode="train"
                 )
             
             if self.data_val_path:
                 self.validation_dataset = NesymresDataset(
-                    self.data_val_path,
-                    self.datamodule_params_val,
+                    self.cfg.val_path,
+                    self.cfg.dataset_val,
                     mode="val"
                 )
             
             if self.data_test_path:
                 self.test_dataset = NesymresDataset(
-                    self.data_test_path, self.datamodule_params_test,
+                    self.cfg.test_path, self.cfg.dataset_test,
                     mode="test"
                 )
 
@@ -295,11 +285,11 @@ class DataModule(pl.LightningDataModule):
         """returns training dataloader"""
         trainloader = torch.utils.data.DataLoader(
             self.training_dataset,
-            batch_size=self.batch,
+            batch_size=self.cfg.batch_size,
             shuffle=True,
             drop_last=True,
-            collate_fn=partial(custom_collate_fn,cfg= self.datamodule_params_train),
-            num_workers=self.num_of_workers,
+            collate_fn=partial(custom_collate_fn,cfg= self.cfg.dataset_train),
+            num_workers=self.cfg.num_of_workers,
             pin_memory=True
         )
         return trainloader
@@ -308,10 +298,10 @@ class DataModule(pl.LightningDataModule):
         """returns validation dataloader"""
         validloader = torch.utils.data.DataLoader(
             self.validation_dataset,
-            batch_size=self.batch,
+            batch_size=self.cfg.batch_size,
             shuffle=False,
-            collate_fn=partial(custom_collate_fn,cfg= self.datamodule_params_val),
-            num_workers=self.num_of_workers,
+            collate_fn=partial(custom_collate_fn,cfg= self.cfg.dataset_val),
+            num_workers=self.cfg.num_of_workers,
             pin_memory=True
         )
         return validloader
@@ -322,11 +312,9 @@ class DataModule(pl.LightningDataModule):
             self.test_dataset,
             batch_size=1,
             shuffle=False,
-            collate_fn=partial(custom_collate_fn,cfg= self.datamodule_params_test),
-            num_workers=self.num_of_workers,
+            collate_fn=partial(custom_collate_fn,cfg=self.cfg.dataset_test),
+            num_workers=self.cfg.num_of_workers,
             pin_memory=True
         )
 
         return testloader
-
-

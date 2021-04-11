@@ -64,20 +64,17 @@ class DatasetParams:
     eos_index: int
     pad_index: int
 
-@dataclass
-class DataModuleParams:
-    max_number_of_points: int = 500
-    type_of_sampling_points: str = ["constant", "logarithm"][1]
-    predict_c: bool = False
-    constant_degree_of_freedom: int = 3
-    fun_support: tuple = (-10,10)
-    additive_constant_support: tuple = (-2,2)
-    multiplicative_constant_support: tuple = (0.1,5)
-    distribution_support: Distribution = [Uniform, Normal][0]
-    total_variables: list = None
-    total_coefficients: list = None
-
-
+# @dataclass
+# class DataModuleParams:
+#     #constant_options: ConstantsOptions
+#     #max_number_of_points: int = 500
+#     #type_of_sampling_points: str = ["constant", "logarithm"][1]
+#     #predict_c: bool = False
+#     # fun_support: tuple = (-10,10)
+#     # distribution_support: Distribution = [Uniform, Normal][0]
+#     total_variables: list = None
+#     total_coefficients: list = None
+    
 @dataclass_dict_convert()
 @dataclass(frozen=True)
 class ArchitectureParams:
@@ -144,3 +141,10 @@ class FitParams:
     bfgs: BFGSParams = BFGSParams()
     beam_size: int = 3
     
+@Params
+class ConstantsOptions:
+    max_constants: int
+    min_additive_constant_support: float
+    max_additive_constant_support: float 
+    min_multiplicative_constant_support: float
+    max_multiplicative_constant_support: float
