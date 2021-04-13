@@ -1,20 +1,18 @@
 train_path: data/datasets/20M/hdf_train
 val_path: data/datasets/20M/hdf_val_subset
 test_path: data/datasets/20M/hdf_val_subset
-
-wandb: False
+wandb: false
 num_of_workers: 64
 batch_size: 128
 epochs: 200
 val_check_interval: 0.2
 precision: 16
-
 dataset_train:
-  total_variables: #Do not fill
-  total_coefficients: #Do not fill
+  total_variables: null
+  total_coefficients: null
   max_number_of_points: 2000
   type_of_sampling_points: logarithm
-  predict_c: False
+  predict_c: false
   fun_support:
     max: 10
     min: -10
@@ -26,13 +24,12 @@ dataset_train:
     multiplicative:
       max: 5
       min: 0.1
-
 dataset_val:
-  total_variables: #Do not fill
-  total_coefficients: #Do not fill
+  total_variables: null
+  total_coefficients: null
   max_number_of_points: 500
   type_of_sampling_points: constant
-  predict_c: False
+  predict_c: false
   fun_support:
     max: 10
     min: -10
@@ -44,13 +41,12 @@ dataset_val:
     multiplicative:
       max: 5
       min: 0.1
-
 dataset_test:
-  total_variables: #Do not fill
-  total_coefficients: #Do not fill
+  total_variables: null
+  total_coefficients: null
   max_number_of_points: 500
   type_of_sampling_points: constant
-  predict_c: False
+  predict_c: false
   fun_support:
     max: 10
     min: -10
@@ -62,10 +58,3 @@ dataset_test:
     multiplicative:
       max: 5
       min: 0.1
-
-# @package _group_
-hydra:
-  run:
-    dir: run/${dataset_train.predict_c}/${now:%Y-%m-%d}/${now:%H-%M-%S}
-  sweep:
-      dir: runs/${dataset_train.predict_c}/${now:%Y-%m-%d}/${now:%H-%M-%S}

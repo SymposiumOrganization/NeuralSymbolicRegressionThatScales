@@ -112,7 +112,7 @@ def evaluate_fun(args):
 
 
 
-def sample_constants(eq: Equation, cfg) -> dict:
+def sample_symbolic_constants(eq: Equation, cfg) -> dict:
     initial_consts = {const: 1 if const[:2] == "cm" else 0 for const in eq.coeff_dict.keys()}
     consts = initial_consts.copy()
     
@@ -125,4 +125,4 @@ def sample_constants(eq: Equation, cfg) -> dict:
             consts[si] = round(float(Uniform(cfg.additive.min, cfg.additive.max).sample()),3)
         else:
             raise KeyError
-    return consts
+    return consts, initial_consts

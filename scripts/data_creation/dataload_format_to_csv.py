@@ -35,7 +35,7 @@ def converter(cfg):
     rows = {"eqs": [], "support": [], "num_points": []}
     for idx in range(metadata.total_number_of_eqs):
         eq = load_eq(path, idx, metadata.eqs_per_hdf)
-        dict_const = data_utils.sample_constants(eq,cfg.dataset_test.constants)
+        dict_const, _ = data_utils.sample_symbolic_constants(eq,cfg.dataset_test.constants)
         eq_string = eq.expr.format(**dict_const)
         eq_string = str(sp.simplify(eq_string))
         d = {}
@@ -46,9 +46,9 @@ def converter(cfg):
         rows["support"].append(str(d))
         rows["num_points"].append(cfg.dataset_test.max_number_of_points)
     dataset = pd.DataFrame(rows)
-    breakpoint()
-    with open(path, "wb") as file:
-        pickle.dump(dataset, file)
+    dataset.to_csv(hydra.utils.to_absolute_path("data/benchmark/test.csv"))
+    # with open(hydra.utils.to_absolute_path("data/benchmark/test_csv"), "wb") as file:
+    #     pickle.dump(dataset, file)
 
 if __name__ == "__main__":
     converter()

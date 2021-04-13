@@ -30,12 +30,12 @@ import types
 from typing import List
 import random
 from torch.distributions.uniform import Uniform
-from ..dclasses import DataModuleParams, NNEquation
+from ..dataset.data_utils import sample_symbolic_constants
 from ..dataset.generator import Generator, UnknownSymPyOperator
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
-from nesymres.dclasses import Params, Dataset, Equation, DatasetParams, ConstantsOptions
+from nesymres.dclasses import Dataset, Equation
 from functools import partial
 from ordered_set import OrderedSet
 from pathlib import Path
@@ -52,22 +52,23 @@ class NesymresDataset(data.Dataset):
         #m = Manager()
         #self.eqs = m.dict({i:eq for i, eq in enumerate(data.eqs)})
         other = load_metadata_hdf5(hydra.utils.to_absolute_path(data_path))
+        cfg.total_variables = other.total_variables
+        cfg.total_coefficients = other.total_coefficients
         self.len = other.total_number_of_eqs
         self.eqs_per_hdf = other.eqs_per_hdf
-        self.data_params = data_params
         self.word2id = other.word2id
         self.data_path = data_path
         self.mode = mode
         self.cfg = cfg
+        
 
     def __getitem__(self, index):
         
         eq = load_eq(self.data_path, index, self.eqs_per_hdf)
         code = types.FunctionType(eq.code, globals=globals(), name="f")
-        
-        consts = sample_constants(eq, self.constant_options)
+        consts, initial_consts = sample_symbolic_constants(eq, self.cfg.constants)
 
-        if self.data_params.predict_c:
+        if self.cfg.predict_c:
             eq_string = eq.expr.format(**consts)
         else:
             eq_string = eq.expr.format(**initial_consts)
@@ -92,7 +93,7 @@ class NesymresDataset(data.Dataset):
     def __len__(self):
         return self.len
 
-def custom_collate_fn(eqs: List[Equation], cfg: DatasetParams = None) -> NNEquation:
+def custom_collate_fn(eqs: List[Equation], cfg) -> List[torch.tensor]:
     filtered_eqs = [eq for eq in eqs if eq.valid]
     res, tokens = evaluate_and_wrap(filtered_eqs, cfg)
     return res, tokens, [eq.expr for eq in filtered_eqs]
@@ -145,10 +146,10 @@ def number_of_support_points(p, type_of_sampling_points):
         raise NameError
     return curr_p
 
-def sample_support(eq, curr_p, cfg: DatasetParams):
+def sample_support(eq, curr_p, cfg):
     sym = []
     if not eq.support:
-        distribution = cfg.distribution_support(cfg.fun_support[0],cfg.fun_support[1])
+        distribution =  torch.distributions.Uniform(cfg.fun_support.min,cfg.fun_support.max) #torch.Uniform.distribution_support(cfg.fun_support[0],cfg.fun_support[1])
     else:
         raise NotImplementedError
     
@@ -160,7 +161,7 @@ def sample_support(eq, curr_p, cfg: DatasetParams):
         sym.append(curr)
     return torch.stack(sym)
 
-def sample_constants(eq, curr_p, cfg:DatasetParams):
+def sample_constants(eq, curr_p, cfg):
     consts = []
     #eq_c = set(eq.coeff_dict.values())
     for c in cfg.total_coefficients:
@@ -177,7 +178,7 @@ def sample_constants(eq, curr_p, cfg:DatasetParams):
         consts.append(curr)
     return torch.stack(consts)
 
-def evaluate_and_wrap(eqs: List[Equation], cfg: DatasetParams):
+def evaluate_and_wrap(eqs: List[Equation], cfg):
     vals = []
     cond0 = []
     tokens_eqs = [eq.tokenized for eq in eqs]
@@ -239,15 +240,16 @@ def evaluate_and_wrap(eqs: List[Equation], cfg: DatasetParams):
 class DataModule(pl.LightningDataModule):
     def __init__(
         self,
-        # data_train_path,
-        # data_val_path,
-        # data_test_path,
+        data_train_path,
+        data_val_path,
+        data_test_path,
         cfg
     ):
         super().__init__()
         self.cfg = cfg
-        # self.val_path = val_path
-        # self.test_path = test_path
+        self.data_train_path = data_train_path
+        self.data_val_path = data_val_path
+        self.data_test_path = data_test_path
         #self.env_path = env_path
         # self.datamodule_params_train = cfg.datamodule_params_train
         # self.datamodule_params_val = cfg.datamodule_params_val
@@ -263,21 +265,21 @@ class DataModule(pl.LightningDataModule):
         if stage == "fit" or stage is None:
             if self.data_train_path:
                 self.training_dataset = NesymresDataset(
-                    self.cfg.train_path,
+                    self.data_train_path,
                     self.cfg.dataset_train,
                     mode="train"
                 )
             
             if self.data_val_path:
                 self.validation_dataset = NesymresDataset(
-                    self.cfg.val_path,
+                    self.data_val_path,
                     self.cfg.dataset_val,
                     mode="val"
                 )
             
             if self.data_test_path:
                 self.test_dataset = NesymresDataset(
-                    self.cfg.test_path, self.cfg.dataset_test,
+                    self.data_test_path, self.cfg.dataset_test,
                     mode="test"
                 )
 
