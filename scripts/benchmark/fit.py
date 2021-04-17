@@ -5,6 +5,8 @@ from functools import partial
 import pandas as pd
 from nesymres.dclasses import Equation
 import time
+import os
+import json
 
 def load_data(benchmark_name):
     df = pd.read_csv(benchmark_name)
@@ -99,7 +101,7 @@ def evaluate_sklearn(model_path, benchmark_name, equation_idx,
 
 @hydra.main(config_name="fit")
 def main(cfg):
-    target_path = hydra.utils.to_absolute_path(Path("results")/cfg.name)
+    target_path = hydra.utils.to_absolute_path(cfg.name)
     model = get_model(cfg)
     eq = load_equation(hydra.utils.to_absolute_path(cfg.benchmark_name),cfg.eq)
     
@@ -129,16 +131,17 @@ def main(cfg):
 
         with open(model_path, 'wb') as f:
             pickle.dump(model, f)
-        output_data = {
-            'duration': duration,
-            'equation': equation,
-            'model_path': model_path,
-            'platform_node': get_platform_node(),
-        }
-        if hasattr(model, 'metrics') and isinstance(model.metrics, dict):
-            output_data.update(model.metrics)
-        with open(Path(cfg.name) / 'results.json', 'w') as f:
-            json.dump(output_data, f, indent=2)
+    output_data = {
+        'duration': duration,
+        'equation': equation,
+        'model_path': model_path,
+        "benchmark_name": cfg.benchmark_name,
+        "idx": cfg.eq
+    }
+    if hasattr(model, 'metrics') and isinstance(model.metrics, dict):
+        output_data.update(model.metrics)
+    with open(os.path.join(target_path, 'results.json'), 'w') as f:
+        json.dump(output_data, f, indent=2)
 
 if __name__=="__main__":
     main()

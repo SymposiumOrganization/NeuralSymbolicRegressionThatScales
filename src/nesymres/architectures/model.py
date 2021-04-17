@@ -39,6 +39,7 @@ class Model(pl.LightningModule):
         self.cfg = cfg
         self.criterion = nn.CrossEntropyLoss(ignore_index=0)
         self.dropout = nn.Dropout(cfg.dropout)
+        self.eq = None
     
 
     def create_sinusoidal_embeddings(self, n_pos, dim, out):
@@ -303,8 +304,11 @@ class Model(pl.LightningModule):
             best_L_bfgs.append(np.nanmin(L_bfgs))
 
             output = {'all_bfgs_preds':P_bfgs, 'all_bfgs_loss':L_bfgs, 'best_bfgs_preds':best_preds_bfgs, 'best_bfgs_loss':best_L_bfgs}
+            self.eq = output
             return output
 
+    def get_equation(self,):
+        return self.eq 
 
 
 if __name__ == "__main__":
@@ -315,5 +319,4 @@ if __name__ == "__main__":
         inp_1 = torch.cat([src_x,src_y], dim=1)
         inp_2 = torch.randint(0,13,[2,10])
         batch = (inp_1,inp_2)
-        breakpoint()
         print(model)
