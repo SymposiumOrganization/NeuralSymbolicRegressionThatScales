@@ -1,6 +1,7 @@
 train_path: data/datasets/20M/hdf_train
 val_path: data/datasets/20M/hdf_val_subset
 test_path: data/datasets/20M/hdf_val_subset
+model_path: outputs/2021-04-09/08-58-27/Exp_weights/data/datasets/20M/hdf_train_log_-epoch=02-val_loss=0.47.ckpt
 
 wandb: False
 num_of_workers: 64
@@ -88,7 +89,6 @@ architecture:
   dim_input: 4
   num_heads: 8
   output_dim: 60
-  dropout: 0
 
 # @package _group_
 hydra:

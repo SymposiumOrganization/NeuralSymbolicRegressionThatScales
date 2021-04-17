@@ -8,28 +8,8 @@ import time
 import os
 import json
 
-def load_data(benchmark_name):
-    df = pd.read_csv(benchmark_name)
-    if not all(x in df.columns for x in ["eqs","support","num_points"]):
-        raise ValueError("dataframe not compliant with the format. Ensure that it has eqs, support and num_points as column name")
-    df = df[["eqs","support","num_points"]]
-    return df    
 
 
-def load_equation(benchmark_name, equation_idx):
-    df = load_data(benchmark_name)
-    benchmark_row = df.loc[equation_idx]
-    gt_equation = benchmark_row['eqs']
-    supp = eval(benchmark_row['support'])
-    variables = set(supp.keys())
-    eq = Equation(code=None, 
-                    expr=gt_equation, 
-                    coeff_dict= None, 
-                    variables=variables, 
-                    support=supp, 
-                    valid = True,
-                    number_of_points= benchmark_row['num_points'] )
-    return eq
 
 def get_nesymres(cfg):
     from nesymres.architectures import model  
@@ -103,7 +83,7 @@ def evaluate_sklearn(model_path, benchmark_name, equation_idx,
 def main(cfg):
     target_path = hydra.utils.to_absolute_path(cfg.name)
     model = get_model(cfg)
-    eq = load_equation(hydra.utils.to_absolute_path(cfg.benchmark_name),cfg.eq)
+    eq = benchmark.load_equation(hydra.utils.to_absolute_path(cfg.benchmark_name),cfg.eq)
     
     X_train, y_train, = benchmark.get_robust_data(eq, mode="iid", cfg=cfg)
     # X_train, y_train = get_data_reject_nan(
