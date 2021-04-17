@@ -120,7 +120,7 @@ def main(cfg):
     }
     if hasattr(model, 'metrics') and isinstance(model.metrics, dict):
         output_data.update(model.metrics)
-    with open(os.path.join(target_path, 'results.json'), 'w') as f:
+    with open('results.json', 'w') as f:
         json.dump(output_data, f, indent=2)
 
 if __name__=="__main__":
