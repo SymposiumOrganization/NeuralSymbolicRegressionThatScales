@@ -4,6 +4,7 @@ from pathlib import Path
 from functools import partial
 import pandas as pd
 from nesymres.dclasses import Equation
+import time
 
 def load_data(benchmark_name):
     df = pd.read_csv(benchmark_name)
@@ -44,8 +45,9 @@ def get_nesymres(cfg):
                             total_coefficients=list(test_data.total_coefficients),
                             rewrite_functions=list(test_data.rewrite_functions)
                             )
-    fitfunc = partial(model.fitfunc,cfg=params_fit)
-    return fitfunc
+    fitfunc = partial(model.fitfunc,cfg_params=params_fit)
+    model.fit = fitfunc
+    return model
 
 def get_model(cfg):
     if cfg.model.model_name == 'brenden':
@@ -100,14 +102,18 @@ def main(cfg):
     target_path = hydra.utils.to_absolute_path(Path("results")/cfg.name)
     model = get_model(cfg)
     eq = load_equation(hydra.utils.to_absolute_path(cfg.benchmark_name),cfg.eq)
-    gt_equation, num_variables, supp = benchmark.get_robust_data(eq, mode="iid", cfg=cfg)
-    X_train, y_train = get_data_reject_nan(
-        gt_equation,
-        num_variables,
-        supp,
-        args.num_eval_points,
-        iid_ood_mode='iid')
+    
+    X_train, y_train, = benchmark.get_robust_data(eq, mode="iid", cfg=cfg)
+    # X_train, y_train = get_data_reject_nan(
+    #     gt_equation,
+    #     num_variables,
+    #     supp,
+    #     args.num_eval_points,
+    #     iid_ood_mode='iid')
     start_time = time.perf_counter()
+    if cfg.model.model_name == 'nesymres':
+        X_train = X_train.transpose()
+        y_train = y_train.transpose()
     model.fit(X_train, y_train)
     duration = time.perf_counter() - start_time
     if hasattr(model, 'get_equation'):

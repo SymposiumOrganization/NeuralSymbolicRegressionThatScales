@@ -1,6 +1,7 @@
 from .dclasses import Equation
 from .utils import load_dataset
 import numpy as np
+from sympy import sympify,lambdify
 
 def evaluate_model(model_predict,
                    benchmark_path,
@@ -73,7 +74,7 @@ def get_data_reject_nan(eq: Equation, cfg):
                          f'{gt_equation} supp={supp}')
     return X, y
 
-def get_data(eq: Equation, mode, cfg):
+def get_data(eq: Equation,number_of_points,  mode, cfg):
     """
     iid_ood_mode: if set to "iid", sample uniformly from the support as given
                   by supp; if set to "ood", sample from a larger support
@@ -90,38 +91,37 @@ def get_data(eq: Equation, mode, cfg):
         #                             f'those.')
         l, h = eq.support[var]["min"], eq.support[var]["max"]
         if mode == 'iid':
-            x = np.random.uniform(l, h, int(eq.number_of_points))
+            x = np.random.uniform(l, h,number_of_points)
         elif mode == 'ood':
             support_length = h - l
             assert support_length > 0
             x = np.random.uniform(l-support_length, h+support_length,
-                                    int(eq.number_of_points))
+                                    number_of_points)
         else:
             raise ValueError(f'Invalid iid_ood_mode: {mode}')
         sym.append(x)
-        vars_list.append(var)
+        vars_list.append(vars_list)
 
     X = np.column_stack(sym)
     assert X.ndim == 2
     assert X.shape[1] <= 3
-    assert X.shape[0] == eq.number_of_points
-    breakpoint()
-    y = evaluate_func(gt_equation, vars_list, X)
+    assert X.shape[0] == number_of_points
+    y = lambdify(list(eq.variables),eq.expr)(X)
+    #y = evaluate_func(gt_equation, vars_list, X)
     return X, y
 
 
 
 def get_robust_data(eq: Equation,mode, cfg):
     n_attempts_max = 100
-    X, y = get_data(eq, mode, cfg)
+    X, y = get_data(eq,  eq.number_of_points, mode, cfg)
     for _ in range(n_attempts_max):
-        nans = np.isnan(y)
+        nans = np.isnan(y).squeeze()
         if not nans.any():
             break
 
         n_nans = nans.sum()
-        X[nans], y[nans] = get_data(eq, n_nans,
-                                    mode)
+        X[nans,:], y[nans,:] = get_data(eq,n_nans,mode, cfg)
     if nans.any():
         raise ValueError('Could not sample valid points for equation '
                          f'{gt_equation} supp={supp}')

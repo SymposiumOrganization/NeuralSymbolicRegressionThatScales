@@ -12,7 +12,7 @@ from pytorch_lightning import Trainer, seed_everything
 from typing import Tuple
 from nesymres.architectures.model import Model
 from nesymres.architectures.data import DataModule
-from nesymres.dclasses import Params, DataModuleParams, FitParams
+from nesymres.dclasses import DataModuleParams, FitParams, NNEquation
 from nesymres.utils import load_metadata_hdf5
 from functools import partial
 import hydra
@@ -21,9 +21,7 @@ import hydra
 def main(cfg):
     model_path = hydra.utils.to_absolute_path(cfg.model_path)
     test_data = load_metadata_hdf5(hydra.utils.to_absolute_path(cfg.test_path))
-    data_params = Params(datamodule_params_test=DataModuleParams(
-                                total_variables=list(test_data.total_variables), 
-                                total_coefficients=list(test_data.total_coefficients)),num_of_workers=0)
+
 
     params_fit = FitParams(word2id=test_data.word2id, 
                             id2word=test_data.id2word, 
@@ -33,12 +31,14 @@ def main(cfg):
                             total_coefficients=list(test_data.total_coefficients),
                             rewrite_functions=list(test_data.rewrite_functions)
                             )
+
     data = DataModule(
         None,
         None,
         hydra.utils.to_absolute_path(cfg.test_path),
-        cfg=data_params
+        cfg
     )
+
     data.setup()
     model = Model.load_from_checkpoint(model_path, cfg=cfg.architecture)
     model.eval()
@@ -49,7 +49,8 @@ def main(cfg):
         if not len(batch[0]):
             continue
         eq = NNEquation(batch[0][0],batch[1][0],batch[2][0])
-        X,y = eq.numerical_values[None,:-1],eq.numerical_values[None,-1:] 
+        X,y = eq.numerical_values[:-1],eq.numerical_values[-1:] 
+        breakpoint()
         if len(X.reshape(-1)) == 0:
             print("Skipping equation because no points are valid")
             continue

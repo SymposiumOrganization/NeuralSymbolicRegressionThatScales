@@ -125,12 +125,16 @@ class Model(pl.LightningModule):
 
 
     def fitfunc(self, X,y, cfg_params=None):
+        X = torch.tensor(X,device=self.device).unsqueeze(0)
+        if X.shape[1] < self.cfg.dim_input - 1:
+            pad = torch.zeros(1,self.cfg.dim_input-X.shape[1]-1, X.shape[2], device=self.device)
+            X = torch.cat((X,pad),dim=1)
+        y = torch.tensor(y,device=self.device).unsqueeze(0)
         with torch.no_grad():
 
             encoder_input = torch.cat((X, y), dim=1).permute(0, 2, 1)
-            
-            if self.device.type == "cuda":
-                encoder_input = encoder_input.cuda()
+            # if self.device.type == "cuda":
+            #     encoder_input = encoder_input.cuda()
             enc_src = self.enc(encoder_input)
             src_enc = enc_src
             shape_enc_src = (cfg_params.beam_size,) + src_enc.shape[1:]

@@ -111,7 +111,7 @@ def bfgs(pred_str, X, y, cfg):#n_restarts, env, NMSE=True, idx_remove =True, nor
         # input_batch = input_batch[idx_leave,:]
 
 
-    max_y = np.max(np.abs(torch.abs(y).numpy()))
+    max_y = np.max(np.abs(torch.abs(y).cpu().numpy()))
     print('checking input values range...')
     if max_y > 300:
         print('Attention, input values are very large. Optimization may fail due to numerical issues')
@@ -165,8 +165,8 @@ def bfgs(pred_str, X, y, cfg):#n_restarts, env, NMSE=True, idx_remove =True, nor
         else:
             funcs.append(final)
         
-        values = {x:X[:,idx,:] for idx, x in enumerate(cfg.total_variables)}
-        final_loss = np.mean(np.square(sp.lambdify(",".join(cfg.total_variables), final)(**values)-y).numpy())
+        values = {x:X[:,idx,:].cpu() for idx, x in enumerate(cfg.total_variables)}
+        final_loss = np.mean(np.square(sp.lambdify(",".join(cfg.total_variables), final)(**values)-y.cpu()).numpy())
         F_loss.append(final_loss)
          #early stopping
         # if final_loss < 1e-8:
