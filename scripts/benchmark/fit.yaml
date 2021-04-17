@@ -1,5 +1,7 @@
-default:
-  model: nesymres
-  datasets: ai_feymann
-dataset:
-eq:
+defaults:
+  - model: nesymres
+
+test_path: data/datasets/20M/hdf_val_subset
+name: results
+benchmark_name: data/benchmark/test.csv
+eq: 2

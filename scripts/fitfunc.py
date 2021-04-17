@@ -12,12 +12,12 @@ from pytorch_lightning import Trainer, seed_everything
 from typing import Tuple
 from nesymres.architectures.model import Model
 from nesymres.architectures.data import DataModule
-from nesymres.dclasses import Params, DataModuleParams, FitParams, ArchitectureParams
+from nesymres.dclasses import Params, DataModuleParams, FitParams
 from nesymres.utils import load_metadata_hdf5
 from functools import partial
 import hydra
 
-@hydra.main(config_name="fitfunc")
+@hydra.main(config_name="config")
 def main(cfg):
     model_path = hydra.utils.to_absolute_path(cfg.model_path)
     test_data = load_metadata_hdf5(hydra.utils.to_absolute_path(cfg.test_path))
@@ -25,7 +25,6 @@ def main(cfg):
                                 total_variables=list(test_data.total_variables), 
                                 total_coefficients=list(test_data.total_coefficients)),num_of_workers=0)
 
-    architecture_params = ArchitectureParams()
     params_fit = FitParams(word2id=test_data.word2id, 
                             id2word=test_data.id2word, 
                             una_ops=test_data.una_ops, 
@@ -41,7 +40,7 @@ def main(cfg):
         cfg=data_params
     )
     data.setup()
-    model = Model.load_from_checkpoint(model_path, cfg=architecture_params)
+    model = Model.load_from_checkpoint(model_path, cfg=cfg.architecture)
     model.eval()
     model.cuda()
     fitfunc = partial(model.fitfunc,cfg_params=params_fit)

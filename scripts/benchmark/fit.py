@@ -1,39 +1,63 @@
 import hydra
 from nesymres import benchmark
+from pathlib import Path
+from functools import partial
+import pandas as pd
+from nesymres.dclasses import Equation
 
-def load_data():
-    df = pd.read_csv(EQUATIONS_PATH)
-    df.set_index(['benchmark', 'num'], inplace=True)
+def load_data(benchmark_name):
+    df = pd.read_csv(benchmark_name)
+    if not all(x in df.columns for x in ["eqs","support","num_points"]):
+        raise ValueError("dataframe not compliant with the format. Ensure that it has eqs, support and num_points as column name")
+    df = df[["eqs","support","num_points"]]
     return df    
 
 
 def load_equation(benchmark_name, equation_idx):
-    df = load_data()
-    benchmark_row = df.loc[(benchmark_name, equation_idx)]
-    gt_equation = benchmark_row['gt_expr']
-    supp = ast.literal_eval(benchmark_row['support'])
-    num_variables = len(supp)
-    return gt_equation, num_variables, supp
+    df = load_data(benchmark_name)
+    benchmark_row = df.loc[equation_idx]
+    gt_equation = benchmark_row['eqs']
+    supp = eval(benchmark_row['support'])
+    variables = set(supp.keys())
+    eq = Equation(code=None, 
+                    expr=gt_equation, 
+                    coeff_dict= None, 
+                    variables=variables, 
+                    support=supp, 
+                    valid = True,
+                    number_of_points= benchmark_row['num_points'] )
+    return eq
 
-
+def get_nesymres(cfg):
+    from nesymres.architectures import model  
+    from nesymres.utils import load_metadata_hdf5
+    from nesymres.dclasses import FitParams
+    model = model.Model.load_from_checkpoint(hydra.utils.to_absolute_path(cfg.model.checkpoint_path), cfg=cfg.model.architecture)
+    model.eval()
+    model.cuda()
+    test_data = load_metadata_hdf5(hydra.utils.to_absolute_path(cfg.test_path))
+    params_fit = FitParams(word2id=test_data.word2id, 
+                            id2word=test_data.id2word, 
+                            una_ops=test_data.una_ops, 
+                            bin_ops=test_data.bin_ops, 
+                            total_variables=list(test_data.total_variables),  
+                            total_coefficients=list(test_data.total_coefficients),
+                            rewrite_functions=list(test_data.rewrite_functions)
+                            )
+    fitfunc = partial(model.fitfunc,cfg=params_fit)
+    return fitfunc
 
 def get_model(cfg):
-    if cfg.model_name == 'brenden':
+    if cfg.model.model_name == 'brenden':
         """Brenden is not compatible with latest python version"""
         from models.brenden import get_brenden  
         return get_brenden(args.brenden_n_epochs)
-        
-    elif cfg.model_name == 'nesymres':
-        from models.nesymres import get_nesymres  # Only import if needed
-        return get_nesymres(args.nesymres_checkpoint_path,
-                            args.nesymres_beam_size,
-                            args.nesymres_bfgs,
-                            args.nesymres_bfgs_n_restarts,
-                            args.nesymres_complexity_reg_coef)
-    elif args.model_name == 'genetic_prog':
+    elif cfg.model.model_name == 'nesymres':
+        return get_nesymres(cfg)
+    elif cfg.model.model_name == 'genetic_prog':
         from models.genetic_prog import get_genetic_prog
         return get_genetic_prog(args.genetic_prog_population_size)
-    elif args.model_name == 'gaussian_proc':
+    elif cfg.model.model_name == 'gaussian_proc':
         from models.gaussian_proc import get_gaussian_proc
         return get_gaussian_proc(args.gaussian_proc_n_restarts)
     else:
@@ -71,12 +95,12 @@ def evaluate_sklearn(model_path, benchmark_name, equation_idx,
                           pointwise_acc_rtol, pointwise_acc_atol)
 
 
-@hydra.main("evaluate")
+@hydra.main(config_name="fit")
 def main(cfg):
-    targe_path = hydra.utils.to_absolute_path(Path("results")/cfg.name)
+    target_path = hydra.utils.to_absolute_path(Path("results")/cfg.name)
     model = get_model(cfg)
-    eq = load_equation(cfg.benchmark_name,idx)
-    gt_equation, num_variables, supp = get_robust_data(eq, cfg)
+    eq = load_equation(hydra.utils.to_absolute_path(cfg.benchmark_name),cfg.eq)
+    gt_equation, num_variables, supp = benchmark.get_robust_data(eq, mode="iid", cfg=cfg)
     X_train, y_train = get_data_reject_nan(
         gt_equation,
         num_variables,

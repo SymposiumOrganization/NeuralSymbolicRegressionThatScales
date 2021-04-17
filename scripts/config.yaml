@@ -63,6 +63,33 @@ dataset_test:
       max: 5
       min: 0.1
 
+architecture:
+  sinuisodal_embeddings: False
+  dec_pf_dim: 512
+  dec_layers: 2
+  dim_hidden: 512  
+  lr: 0.0001
+  dropout: 0
+  num_features: 10
+  ln: True
+  N_p: 0
+  num_inds: 50
+  activation: "relu"
+  bit16: True
+  norm: True
+  linear: False
+  input_normalization: False
+  src_pad_idx: 0
+  trg_pad_idx: 0
+  length_eq: 60
+  n_l_enc: 2
+  mean: 0.5  
+  std: 0.5 
+  dim_input: 4
+  num_heads: 8
+  output_dim: 60
+  dropout: 0
+
 # @package _group_
 hydra:
   run:

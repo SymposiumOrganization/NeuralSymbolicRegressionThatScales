@@ -1,5 +1,6 @@
 from .dclasses import Equation
 from .utils import load_dataset
+import numpy as np
 
 def evaluate_model(model_predict,
                    benchmark_path,
@@ -72,7 +73,7 @@ def get_data_reject_nan(eq: Equation, cfg):
                          f'{gt_equation} supp={supp}')
     return X, y
 
-def get_data(eq: Equation, cfg):
+def get_data(eq: Equation, mode, cfg):
     """
     iid_ood_mode: if set to "iid", sample uniformly from the support as given
                   by supp; if set to "ood", sample from a larger support
@@ -80,39 +81,39 @@ def get_data(eq: Equation, cfg):
     """
     sym = []
     vars_list = []
-    for i, var in enumerate(["x", "y", "z"]):
-        if i < num_variables:
-            # U means random uniform sampling.
-            # Currently this is the only mode we support.
-            # Decide what to do about the linspace mode.
-            assert 'U' in supp[var], (f'Support modes {supp[var].keys()} not '
-                                      f'implemented! Decide what to do about '
-                                      f'those.')
-            l, h = supp[var]['U']
-            if iid_ood_mode == 'iid':
-                x = np.random.uniform(l, h, int(num_eval_points))
-            elif iid_ood_mode == 'ood':
-                support_length = h - l
-                assert support_length > 0
-                x = np.random.uniform(l-support_length, h+support_length,
-                                      int(num_eval_points))
-            else:
-                raise ValueError(f'Invalid iid_ood_mode: {iid_ood_mode}')
-            sym.append(x)
-            vars_list.append(var)
+    for i, var in enumerate(eq.variables):
+        # U means random uniform sampling.
+        # Currently this is the only mode we support.
+        # Decide what to do about the linspace mode.
+        # assert 'U' in eq.support[var], (f'Support modes {eq.support[var].keys()} not '
+        #                             f'implemented! Decide what to do about '
+        #                             f'those.')
+        l, h = eq.support[var]["min"], eq.support[var]["max"]
+        if mode == 'iid':
+            x = np.random.uniform(l, h, int(eq.number_of_points))
+        elif mode == 'ood':
+            support_length = h - l
+            assert support_length > 0
+            x = np.random.uniform(l-support_length, h+support_length,
+                                    int(eq.number_of_points))
+        else:
+            raise ValueError(f'Invalid iid_ood_mode: {mode}')
+        sym.append(x)
+        vars_list.append(var)
 
     X = np.column_stack(sym)
     assert X.ndim == 2
     assert X.shape[1] <= 3
-    assert X.shape[0] == num_eval_points
+    assert X.shape[0] == eq.number_of_points
+    breakpoint()
     y = evaluate_func(gt_equation, vars_list, X)
     return X, y
 
 
 
-def get_robust_data(eq: Equation, idx, cfg):
+def get_robust_data(eq: Equation,mode, cfg):
     n_attempts_max = 100
-    X, y = get_data(eq, cfg)
+    X, y = get_data(eq, mode, cfg)
     for _ in range(n_attempts_max):
         nans = np.isnan(y)
         if not nans.any():
@@ -120,7 +121,7 @@ def get_robust_data(eq: Equation, idx, cfg):
 
         n_nans = nans.sum()
         X[nans], y[nans] = get_data(eq, n_nans,
-                                    iid_ood_mode)
+                                    mode)
     if nans.any():
         raise ValueError('Could not sample valid points for equation '
                          f'{gt_equation} supp={supp}')

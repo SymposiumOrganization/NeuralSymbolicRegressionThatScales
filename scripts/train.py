@@ -33,7 +33,7 @@ def main(cfg):
         None,
         cfg
     )
-    model = Model(cfg=architecture_params)
+    model = Model(cfg=cfg.architecture)
     if cfg.wandb:
         wandb.init(config=architecture_params.to_dict(), project="ICML")
         config = wandb.config

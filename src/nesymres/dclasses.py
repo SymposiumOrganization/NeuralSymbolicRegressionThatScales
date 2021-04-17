@@ -14,6 +14,7 @@ class Equation:
     support: tuple = None
     tokenized: list = None
     valid: bool = True
+    number_of_points: int = None
     
 @dataclass 
 class NNEquation:
@@ -75,34 +76,34 @@ class DatasetParams:
 #     total_variables: list = None
 #     total_coefficients: list = None
     
-@dataclass_dict_convert()
-@dataclass(frozen=True)
-class ArchitectureParams:
-    sinuisodal_embeddings: bool = False
-    dec_pf_dim: int = 512
-    dec_layers: int = 2
-    dim_hidden: int = 512  
-    lr: int = 0.0001
-    dropout: int = 0
-    num_features: int = 10
-    ln: bool = True
-    N_p:int = 0
-    num_inds: int = 50
-    activation: str = "relu"
-    bit16: bool = True
-    norm: bool = True
-    linear: bool= False
-    input_normalization: bool = False
-    src_pad_idx: int = 0
-    trg_pad_idx: int = 0
-    length_eq: int = 60
-    n_l_enc: int = 2
-    mean: float = 0.5  
-    std: float = 0.5 
-    dim_input: int = 4
-    num_heads: int = 8
-    output_dim: int = 60
-    dropout: float = 0
+# @dataclass_dict_convert()
+# @dataclass(frozen=True)
+# class ArchitectureParams:
+#     sinuisodal_embeddings: bool = False
+#     dec_pf_dim: int = 512
+#     dec_layers: int = 2
+#     dim_hidden: int = 512  
+#     lr: int = 0.0001
+#     dropout: int = 0
+#     num_features: int = 10
+#     ln: bool = True
+#     N_p:int = 0
+#     num_inds: int = 50
+#     activation: str = "relu"
+#     bit16: bool = True
+#     norm: bool = True
+#     linear: bool= False
+#     input_normalization: bool = False
+#     src_pad_idx: int = 0
+#     trg_pad_idx: int = 0
+#     length_eq: int = 60
+#     n_l_enc: int = 2
+#     mean: float = 0.5  
+#     std: float = 0.5 
+#     dim_input: int = 4
+#     num_heads: int = 8
+#     output_dim: int = 60
+#     dropout: float = 0
 
 
 
