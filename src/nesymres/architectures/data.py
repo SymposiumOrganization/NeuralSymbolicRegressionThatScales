@@ -73,8 +73,9 @@ class NesymresDataset(data.Dataset):
         else:
             eq_string = eq.expr.format(**initial_consts)
 
-        eq_sympy_infix = constants_to_placeholder(eq_string)
+        
         try:
+            eq_sympy_infix = constants_to_placeholder(eq_string)
             eq_sympy_prefix = Generator.sympy_to_prefix(eq_sympy_infix)
         except UnknownSymPyOperator as e:
             print(e)
@@ -100,16 +101,13 @@ def custom_collate_fn(eqs: List[Equation], cfg) -> List[torch.tensor]:
 
 
 def constants_to_placeholder(s,symbol="c"):
-    try:
-        sympy_expr = sympify(s)  # self.infix_to_sympy("(" + s + ")")
-        sympy_expr = sympy_expr.xreplace(
-            Transform(
-                lambda x: Symbol(symbol, real=True, nonzero=True),
-                lambda x: isinstance(x, Float),
-            )
+    sympy_expr = sympify(s)  # self.infix_to_sympy("(" + s + ")")
+    sympy_expr = sympy_expr.xreplace(
+        Transform(
+            lambda x: Symbol(symbol, real=True, nonzero=True),
+            lambda x: isinstance(x, Float),
         )
-    except:
-        breakpoint()
+    )
     return sympy_expr
 
 def tokenize(prefix_expr:list, word2id:dict) -> list:

@@ -126,6 +126,9 @@ class Model(pl.LightningModule):
 
 
     def fitfunc(self, X,y, cfg_params=None):
+        X_train = X_train.transpose()
+        y_train = y_train[:,None].transpose()
+        
         X = torch.tensor(X,device=self.device).unsqueeze(0)
         if X.shape[1] < self.cfg.dim_input - 1:
             pad = torch.zeros(1,self.cfg.dim_input-X.shape[1]-1, X.shape[2], device=self.device)
@@ -300,15 +303,20 @@ class Model(pl.LightningModule):
                 P_bfgs.append(str(pred_w_c))
                 L_bfgs.append(loss_bfgs)
 
-            best_preds_bfgs.append(P_bfgs[np.nanargmin(L_bfgs)])
-            best_L_bfgs.append(np.nanmin(L_bfgs))
+            if all(np.isnan(np.array(L_bfgs))):
+                print("Warning all nans")
+                L_bfgs = float("nan")
+                best_L_bfgs = None
+            else:
+                best_preds_bfgs.append(P_bfgs[np.nanargmin(L_bfgs)])
+                best_L_bfgs.append(np.nanmin(L_bfgs))
 
             output = {'all_bfgs_preds':P_bfgs, 'all_bfgs_loss':L_bfgs, 'best_bfgs_preds':best_preds_bfgs, 'best_bfgs_loss':best_L_bfgs}
-            self.eq = output
+            self.eq = output['best_bfgs_preds']
             return output
 
     def get_equation(self,):
-        return self.eq 
+        return self.eq
 
 
 if __name__ == "__main__":

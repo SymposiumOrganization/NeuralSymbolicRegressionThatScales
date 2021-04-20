@@ -10,7 +10,7 @@ class Equation:
     code: CodeType
     expr: str
     coeff_dict: dict
-    variables: set
+    variables: list #FIXME
     support: tuple = None
     tokenized: list = None
     valid: bool = True
@@ -123,7 +123,7 @@ class DatasetParams:
 @dataclass
 class BFGSParams:
     on: bool = True
-    n_restarts: bool = 10
+    n_restarts: bool = 5
     add_coefficients_if_not_existing: bool = True
     normalization_o: bool = False
     idx_remove: bool = True
@@ -140,7 +140,7 @@ class FitParams:
     una_ops: list = None
     bin_ops: list = None
     bfgs: BFGSParams = BFGSParams()
-    beam_size: int = 3
+    beam_size: int = 2
     
 # @dataclass
 # class ConstantsOptions:

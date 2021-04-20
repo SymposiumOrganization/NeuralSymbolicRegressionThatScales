@@ -51,5 +51,3 @@ def create_env(path):
     env = generator.Generator(param)
     return env, d
 
-
-

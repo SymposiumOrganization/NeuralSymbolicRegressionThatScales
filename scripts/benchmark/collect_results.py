@@ -12,13 +12,12 @@ import seaborn as sns
 from sklearn.metrics import r2_score, mean_squared_error
 from tqdm import tqdm
 import hydra
-
+from csem_exptrack import process, utils
+import json
+from nesymres import benchmark
 #from misc_utils.misc_utils import get_combined_df, get_root_dirs, reroute_path
 #from utils import get_variables, evaluate_func
 
-POINTWISE_ACC_RTOL = 0.05
-POINTWISE_ACC_ATOL = 0.001
-NUM_TEST_POINTS = 10_000
 
 
 def parse_args():
@@ -61,31 +60,56 @@ def patch_benchmark_name(args_df):
         print('Patching benchmark_name!')
         args_df['benchmark_name'] = 'ai_feymann'
 
-@hydra.main(config_name="fit")
+@hydra.main(config_name="collect_results")
 def main(cfg):
-    return collect_results(cfg.name)
+    return collect_results(cfg)
 
 
-def collect_results(root_dirs):
-    # Get all args and equations and other results into a dataframe
-    # root_dirs = get_root_dirs(root_dir=None, root_dirs=root_dirs)
-    # combined_df = get_combined_df(root_dirs,
-    #                               args_df_modifiers=[patch_benchmark_name],
-    #                               run_dir_pattern='run*',
-    #                               args_filename='args.json',
-    #                               metrics_filename='results.json')
+def collect_results(cfg):
+    loader = process.file_loader.FileLoader("results.json")
+    df = loader.load_folder(hydra.utils.to_absolute_path("runs/nesymres")).T    
+    #f = raw_df.loc[[0,("other","test_path"),("other","name"),("other", "eq"),("other", "benchmark_name") ]]
+     
+    eqs = list(df.loc[:,[("other", "equation_idx")]].values.reshape(-1))
+    
+    res = []
+    for i in range(len(df)):
+        with open(df.iloc[i,0]) as json_file:
+            json_data = json.load(json_file)
+            res.append(json_data)
+    best_eq = [x["equation"][0] if x["equation"] else None for x in res]
+    duration = [x["duration"] for x in res]
+    # columns = {x:[None]*len(eqs) for x in ['duration', 'equation', 'model_path',  
+    #                     'P', 'P_bfgs', 'regularized_losses', 'equation_lengths_bfgs', 
+    #                     'hypothesis_scores_bfgs', 'run_key', 'output_dir', 'benchmark_path', 
+    #                     'equation_idx', 'num_eval_points', 'model_name',  
+    #                     'nesymres_checkpoint_path', 'nesymres_beam_size', 'nesymres_bfgs', 'nesymres_bfgs_n_restarts', 
+    #                     'nesymres_complexity_reg_coef']}
+    df.loc[:,"pred_eq"] = best_eq
+    df.loc[:,"duration"] = duration
+    df.index = eqs
+    #combined_df = pd.DataFrame(columns,index=list(range(len(eqs))))
+    
+    #list(raw_df.loc[[("other", "benchmark_name")]].values.squeeze())
+    #combined_df["equation"] = best_eq
+    # benchmark_path = list(raw_df.loc[[("other", "benchmark_name")]].values.reshape(-1))
+    # benchmark_path = [hydra.utils.to_absolute_path(x) for x in benchmark_path]
+    # combined_df["benchmark_name"] = benchmark_path
+    # combined_df["equation_idx"] = list(raw_df.loc[[("other", "eq")]].values.reshape(-1)) #FIXME EQ--> EQ_IDX
+    # results = []
+    # utils.drop_not_changing_row(res)  #res.loc[drop_not_changing_row]
+    
+    #combined_df['equation'] = combined_df['equation'].map(standardize_equation) #FIXME x_1 might not be good
+    #combined_df['benchmark_name'] = combined_df['benchmark_name'].map(rename_benchmark)
 
-    # Manual fixes of the dataframe
-    combined_df['equation'] = combined_df['equation'].map(standardize_equation)
-    combined_df['benchmark_name'] = combined_df['benchmark_name'].map(rename_benchmark)
-
-    print(f'combined_df: {combined_df}')
-    print('columns')
-    pprint(list(combined_df.columns))
+    # print(f'combined_df: {combined_df}')
+    # print('columns')
+    # pprint(list(combined_df.columns))
 
     eval_rows = []
 
-    for idx, df_row in tqdm(combined_df.iterrows(), desc='Evaluate equations...'):
+    for idx, df_row in tqdm(df.iterrows(), desc='Evaluate equations...'):
+        
         # print(f'df_row.equation_idx: {df_row.equation_idx}')
         # print(f'model_name: {df_row.model_name}')
         # print(f'equation: {df_row.equation}')
@@ -93,35 +117,37 @@ def collect_results(root_dirs):
         # print(f'num_test_points: {NUM_TEST_POINTS}')
 
 
-        if df_row.equation is not None:
+        if df_row.pred_eq:
             assert getattr(df_row, 'model_path', None) is None
             metrics = evaluate_equation(
-                pred_equation=df_row.equation,
-                benchmark_name=df_row.benchmark_name,
-                equation_idx=df_row.equation_idx,
-                num_test_points=NUM_TEST_POINTS,
-                pointwise_acc_rtol=POINTWISE_ACC_RTOL,
-                pointwise_acc_atol=POINTWISE_ACC_ATOL)
+                pred_equation=df_row.pred_eq,
+                benchmark_name=hydra.utils.to_absolute_path(df_row.loc[[("other", "benchmark_path")]][0]),
+                equation_idx=df_row.loc[[("other", "equation_idx")]][0],
+                cfg=cfg)
         else:
-            model_path = reroute_path(df_row.model_path, df_row.output_dir,
-                root_dirs)
-            metrics = evaluate_sklearn(
-                model_path=model_path,
-                benchmark_name=df_row.benchmark_name,
-                equation_idx=df_row.equation_idx,
-                num_test_points=NUM_TEST_POINTS,
-                pointwise_acc_rtol=POINTWISE_ACC_RTOL,
-                pointwise_acc_atol=POINTWISE_ACC_ATOL
-            )
+            metrics = {}
+        # else:
+        #     model_path = reroute_path(df_row.model_path, df_row.output_dir,
+        #         root_dirs)
+        #     metrics = evaluate_sklearn(
+        #         model_path=model_path,
+        #         benchmark_name=df_row.benchmark_name,
+        #         equation_idx=df_row.equation_idx,
+        #         num_test_points=cfg.NUM_TEST_POINTS,
+        #         pointwise_acc_rtol=cfg.POINTWISE_ACC_RTOL,
+        #         pointwise_acc_atol=cfg.POINTWISE_ACC_ATOL
+        #     )
         eval_row = df_row.to_dict()
+        
         eval_row.update(metrics)
         eval_rows.append(eval_row)
 
+    
     eval_df = pd.DataFrame(eval_rows)
 
-    eval_df.to_csv(Path(root_dirs[0]) / 'eval_df_v2.csv')
+    eval_df.to_csv('eval_df_v2.csv')
 
-    return eval_df, root_dirs
+    return eval_df #, root_dirs
 
 
 def get_pointwise_acc(y_true, y_pred, rtol, atol):
@@ -130,19 +156,17 @@ def get_pointwise_acc(y_true, y_pred, rtol, atol):
     return r.mean()
 
 
-def evaluate_equation(pred_equation, benchmark_name, equation_idx,
-                      num_test_points, pointwise_acc_rtol,
-                      pointwise_acc_atol):
+def evaluate_equation(pred_equation, benchmark_name, equation_idx, cfg):
     """Evaluate equation `pred_equation` given as a string."""
 
     def model_predict(X):
-        pred_variables = get_variables(pred_equation)
+        pred_variables = benchmark.get_variables(pred_equation)
         # assert len(pred_variables) <= X.shape[1]
-        return evaluate_func(pred_equation, pred_variables, X)
+        #y = lambdify(list(eq.variables),eq.expr)(*X.T)[:,None]
+        return benchmark.evaluate_func(pred_equation, pred_variables, X)
 
     return evaluate_model(model_predict, benchmark_name, equation_idx,
-                          num_test_points,
-                          pointwise_acc_rtol, pointwise_acc_atol)
+                          cfg)
 
 
 def evaluate_sklearn(model_path, benchmark_name, equation_idx,
@@ -162,26 +186,22 @@ def evaluate_sklearn(model_path, benchmark_name, equation_idx,
 
 
 def evaluate_model(model_predict,
-                   benchmark_name,
+                   benchmark_path,
                    equation_idx,
-                   num_test_points,
-                   pointwise_acc_rtol,
-                   pointwise_acc_atol):
+                   cfg):
     """
     model_predict is a callable that takes an X of shape
     (n_datapoints, n_variables) and returns scalar predictions
     """
+    
+    eq = benchmark.load_equation(benchmark_path,equation_idx)
+    print(f'gt_equation: {eq.expr}')
 
-    gt_equation, num_variables, supp = benchmark.load_equation(benchmark_name,
-                                                     equation_idx)
-    print(f'gt_equation: {gt_equation}')
-
-    metrics = {'gt_equation': gt_equation,
-               'num_variables': num_variables,}
+    metrics = {'gt_equation': eq.expr,
+               'num_variables': len(eq.variables),}
     for iid_ood_mode in ['iid', 'ood']:
-        X, y = benchmark.get_data(gt_equation, num_variables, supp, num_test_points,
-                        iid_ood_mode=iid_ood_mode)
-
+        #get_data(eq,  eq.number_of_points, mode, cfg)
+        X, y = benchmark.get_data(eq, cfg.num_test_points, mode=iid_ood_mode) #Think about robust nan
         y_pred = model_predict(X)
         assert y_pred.shape == (X.shape[0],)
 
@@ -189,16 +209,16 @@ def evaluate_model(model_predict,
             warnings.warn('Complex values found!')
             y_pred = np.real(y_pred)
 
-        pointwise_acc = get_pointwise_acc(y, y_pred,
-                                          rtol=pointwise_acc_rtol,
-                                          atol=pointwise_acc_atol)
-        acc_key = _get_acc_key(iid_ood_mode)
+        pointwise_acc = get_pointwise_acc(y, y_pred,rtol=cfg.pointwise_acc_rtol,atol=cfg.pointwise_acc_atol)
+        acc_key = _get_acc_key(iid_ood_mode,cfg)
         metrics[acc_key] = pointwise_acc
-
         # Drop all indices where the ground truth is NaN or +-inf
-        assert y.ndim == 1
+        #y = y.squeeze() #Points, Y_dim
+        assert y.ndim == 1 #Points 
+        #y.squeeze()
         valid_idxs = ~np.isnan(y) & ~np.isinf(y)
-        metrics[f'frac_valid_{iid_ood_mode}'] = valid_idxs.sum() / num_test_points
+        metrics[f'frac_valid_{iid_ood_mode}'] = valid_idxs.sum() / cfg.num_test_points
+        
         y = y[valid_idxs]
         y_pred = y_pred[valid_idxs]
         assert y.shape[0] == valid_idxs.sum()
@@ -214,12 +234,14 @@ def evaluate_model(model_predict,
         metrics[f'r2_{iid_ood_mode}'] = r2
         metrics[f'mse_{iid_ood_mode}'] = mse
 
+    # if equation_idx == 30:
+    #     breakpoint()
     return metrics
 
 
-def _get_acc_key(iid_ood_mode):
-    return (f'pointwise_acc_r{POINTWISE_ACC_RTOL:.2}_'
-            f'a{POINTWISE_ACC_ATOL:.2}_{iid_ood_mode}')
+def _get_acc_key(iid_ood_mode,cfg):
+    return (f'pointwise_acc_r{cfg.pointwise_acc_rtol:.2}_'
+            f'a{cfg.pointwise_acc_atol:.2}_{iid_ood_mode}')
 
 
 def plot_durations(combined_df):
@@ -233,5 +255,4 @@ def plot_durations(combined_df):
 
 
 if __name__ == '__main__':
-    breakpoint()
-    eval_df, root_dirs = main()
+    eval_df = main()

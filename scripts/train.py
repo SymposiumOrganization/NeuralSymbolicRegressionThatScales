@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from typing import Tuple
 from nesymres.architectures.model import Model
 from nesymres.architectures.data import DataModule
-from nesymres.dclasses import ArchitectureParams
 from nesymres.utils import load_metadata_hdf5
 import wandb
 from dataclass_dict_convert import dataclass_dict_convert 
@@ -26,7 +25,6 @@ def main(cfg):
     seed_everything(9)
     train_path = Path(hydra.utils.to_absolute_path(cfg.train_path))
     val_path = Path(hydra.utils.to_absolute_path(cfg.val_path))
-    architecture_params = ArchitectureParams()
     data = DataModule(
         train_path,
         val_path,

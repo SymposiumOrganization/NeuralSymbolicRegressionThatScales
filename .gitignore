@@ -7,3 +7,5 @@ Exp_weights/*
 wandb/*
 *.log
 outputs/*
+runs/*
+run/*

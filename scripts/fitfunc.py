@@ -50,12 +50,12 @@ def main(cfg):
             continue
         eq = NNEquation(batch[0][0],batch[1][0],batch[2][0])
         X,y = eq.numerical_values[:-1],eq.numerical_values[-1:] 
-        breakpoint()
         if len(X.reshape(-1)) == 0:
             print("Skipping equation because no points are valid")
             continue
         print(f"Testing expressions {eq.expr}")
         output = fitfunc(X,y) 
+        breakpoint()
         print(f"GT: {eq.expr}")
         print(f'Prediction: {output["best_bfgs_preds"]}')
         print("Evaluating")

@@ -1,7 +1,11 @@
 from .dclasses import Equation
 from .utils import load_dataset
 import numpy as np
-from sympy import sympify,lambdify
+from sympy import sympify
+import pandas as pd
+import sympy
+from sympy import lambdify
+
 
 def evaluate_model(model_predict,
                    benchmark_path,
@@ -74,7 +78,7 @@ def get_data_reject_nan(eq: Equation, cfg):
                          f'{gt_equation} supp={supp}')
     return X, y
 
-def get_data(eq: Equation,number_of_points,  mode, cfg):
+def get_data(eq: Equation,number_of_points,  mode):
     """
     iid_ood_mode: if set to "iid", sample uniformly from the support as given
                   by supp; if set to "ood", sample from a larger support
@@ -104,9 +108,10 @@ def get_data(eq: Equation,number_of_points,  mode, cfg):
 
     X = np.column_stack(sym)
     assert X.ndim == 2
-    assert X.shape[1] <= 3
     assert X.shape[0] == number_of_points
-    y = lambdify(list(eq.variables),eq.expr)(X)
+    var = return_order_variables(eq.variables)
+    y = evaluate_func(eq.expr, var, X)
+    #y = lambdify(var,eq.expr)(*X.T)[:,None]
     #y = evaluate_func(gt_equation, vars_list, X)
     return X, y
 
@@ -114,22 +119,25 @@ def get_data(eq: Equation,number_of_points,  mode, cfg):
 
 def get_robust_data(eq: Equation,mode, cfg):
     n_attempts_max = 100
-    X, y = get_data(eq,  eq.number_of_points, mode, cfg)
+    X, y = get_data(eq,  eq.number_of_points, mode)
     for _ in range(n_attempts_max):
-        nans = np.isnan(y).squeeze()
-        if not nans.any():
+        to_replace = np.isnan(y).squeeze() | np.iscomplex(y).squeeze()
+        if not to_replace.any():
             break
 
-        n_nans = nans.sum()
-        X[nans,:], y[nans,:] = get_data(eq,n_nans,mode, cfg)
-    if nans.any():
+        n_to_replace = to_replace.sum()
+        X[to_replace,:], y[to_replace,:] = get_data(eq,n_to_replace,mode)
+    if to_replace.any():
+        #get_data(eq,  eq.number_of_points, mode)
         raise ValueError('Could not sample valid points for equation '
-                         f'{gt_equation} supp={supp}')
+                         f'{eq.expr} supp={eq.support}')
+        
+        
     return X, y
 
     
-def load_equation(benchmark_name, equation_idx):
-    df = load_data(benchmark_name)
+def load_equation(benchmark_path, equation_idx):
+    df = load_data(benchmark_path)
     benchmark_row = df.loc[equation_idx]
     gt_equation = benchmark_row['eqs']
     supp = eval(benchmark_row['support'])
@@ -149,3 +157,53 @@ def load_data(benchmark_name):
         raise ValueError("dataframe not compliant with the format. Ensure that it has eqs, support and num_points as column name")
     df = df[["eqs","support","num_points"]]
     return df    
+
+
+def get_variables(equation):
+    """ Parse all free variables in equations and return them in
+    lexicographic order"""
+    expr = sympy.parse_expr(equation)
+    variables = expr.free_symbols
+    variables = {str(v) for v in variables}
+    # # Tighter sanity check: we only accept variables in ascending order
+    # # to avoid silent errors with lambdify later.
+    # if (variables not in [{'x'}, {'x', 'y'}, {'x', 'y', 'z'}]
+    #         and variables not in [{'x1'}, {'x1', 'x2'}, {'x1', 'x2', 'x3'}]):
+    #     raise ValueError(f'Unexpected set of variables: {variables}. '
+    #                      f'If you want to allow this, make sure that the '
+    #                      f'order of variables of the lambdify output will be '
+    #                      f'correct.')
+
+    # Make a sorted list out of variables
+    # Assumption: the correct order is lexicographic (x, y, z)
+    variables = sorted(variables)
+    return variables
+
+def return_order_variables(var:set):
+    return sorted(list(var), key= lambda x: int(x[2:]))
+
+
+
+def evaluate_func(func_str, vars_list, X):
+    assert X.ndim == 2
+    assert len(set(vars_list)) == len(vars_list), 'Duplicates in vars_list!'
+
+    order_list = vars_list
+    indeces = [int(x[2:])-1 for x in order_list]
+
+    if not order_list:
+        # Empty order list. Constant function predicted
+        f = lambdify([], func_str)
+        return f() * np.ones(X.shape[0])
+
+    # Pad X with zero-columns, allowing for variables to appear in the equation
+    # that are not in the ground-truth equation
+    X_padded = np.zeros((X.shape[0], len(vars_list)))
+    X_padded[:, :X.shape[1]] = X
+    # Subselect columns of X that corrspond to provided variables
+    X_subsel = X_padded[:, indeces]
+
+    # The positional arguments of the resulting function will correspond to
+    # the order of variables in "vars_list"
+    f = lambdify(vars_list, func_str)
+    return f(*X_subsel.T)

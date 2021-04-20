@@ -48,7 +48,7 @@ def get_model(cfg):
         raise ValueError(f'Unknown model_name: {args.model_name}')
 
 
-def evaluate_equation(pred_equation, benchmark_name, equation_idx,
+def evaluate_equation(pred_equation, benchmark_path, equation_idx,
                       num_test_points, pointwise_acc_rtol,
                       pointwise_acc_atol):
     """Evaluate equation `pred_equation` given as a string."""
@@ -58,12 +58,12 @@ def evaluate_equation(pred_equation, benchmark_name, equation_idx,
         # assert len(pred_variables) <= X.shape[1]
         return evaluate_func(pred_equation, pred_variables, X)
 
-    return evaluate_model(model_predict, benchmark_name, equation_idx,
+    return evaluate_model(model_predict, benchmark_path, equation_idx,
                           num_test_points,
                           pointwise_acc_rtol, pointwise_acc_atol)
 
 
-def evaluate_sklearn(model_path, benchmark_name, equation_idx,
+def evaluate_sklearn(model_path, benchmark_path, equation_idx,
                       num_test_points, pointwise_acc_rtol,
                       pointwise_acc_atol):
     """Evaluate sklearn model at model_path."""
@@ -74,7 +74,7 @@ def evaluate_sklearn(model_path, benchmark_name, equation_idx,
     def model_predict(X):
         return model.predict(X)
 
-    return evaluate_model(model_predict, benchmark_name, equation_idx,
+    return evaluate_model(model_predict, benchmark_path, equation_idx,
                           num_test_points,
                           pointwise_acc_rtol, pointwise_acc_atol)
 
@@ -83,19 +83,13 @@ def evaluate_sklearn(model_path, benchmark_name, equation_idx,
 def main(cfg):
     target_path = hydra.utils.to_absolute_path(cfg.name)
     model = get_model(cfg)
-    eq = benchmark.load_equation(hydra.utils.to_absolute_path(cfg.benchmark_name),cfg.eq)
-    
-    X_train, y_train, = benchmark.get_robust_data(eq, mode="iid", cfg=cfg)
-    # X_train, y_train = get_data_reject_nan(
-    #     gt_equation,
-    #     num_variables,
-    #     supp,
-    #     args.num_eval_points,
-    #     iid_ood_mode='iid')
+    eq = benchmark.load_equation(hydra.utils.to_absolute_path(cfg.benchmark_path),cfg.equation_idx)
+    try:
+        X_train, y_train, = benchmark.get_robust_data(eq, mode="iid", cfg=cfg)
+    except ValueError:
+        return None
     start_time = time.perf_counter()
-    if cfg.model.model_name == 'nesymres':
-        X_train = X_train.transpose()
-        y_train = y_train.transpose()
+    
     model.fit(X_train, y_train)
     duration = time.perf_counter() - start_time
     if hasattr(model, 'get_equation'):
@@ -115,8 +109,8 @@ def main(cfg):
         'duration': duration,
         'equation': equation,
         'model_path': model_path,
-        "benchmark_name": cfg.benchmark_name,
-        "idx": cfg.eq
+        "benchmark_path": cfg.benchmark_path,
+        "idx": cfg.equation_idx
     }
     if hasattr(model, 'metrics') and isinstance(model.metrics, dict):
         output_data.update(model.metrics)
