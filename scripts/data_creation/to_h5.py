@@ -9,27 +9,15 @@ import multiprocessing
 from pathlib import Path
 import os
 import click
-
-class H5FilesCreator():
-    def __init__(self,path,dataset):
-        self.path = path
-
-    def create_single_hd5(self,block):
-        idx, eqs = block
-        t_hf = h5py.File(os.path.join(self.path, str(idx) + ".h5") , 'w')
-        for i, eq in enumerate(eqs):            
-            curr = np.void(pickle.dumps(eq))
-            t_hf.create_dataset(str(i), data=curr)
-        t_hf.close()
+from nesymres.utils import H5FilesCreator
 
 
 def create_hdf_files(d: Dataset, s: str) -> None:
     num_eqs_per_set = int(1e5)
     n_datasets = int(len(d.eqs) // num_eqs_per_set) + 1
     path = Path(s)
-    h5_creator = H5FilesCreator(path, dataset=d)
+    h5_creator = H5FilesCreator(path)
     counter = 0
-    path.mkdir(mode=0o777, parents=True, exist_ok=True)
     print("Diving sets")
     
     sets = [[d.eqs[idx] for idx in range(i*num_eqs_per_set,min((i+1)*num_eqs_per_set,len(d.eqs)))] for i in range(n_datasets)]

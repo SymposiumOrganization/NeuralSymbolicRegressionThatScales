@@ -14,15 +14,6 @@ from sympy import Float
 from ..dclasses import Equation
 
 
-def evaluate_validation_set(validation_set, support) -> set:
-    res = set()
-    for i in validation_set:
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            curr = tuple(lambdify(['x','y','z'],i)(*support).numpy().astype('float16'))
-            res.add(curr)
-    return res
-
 def create_uniform_support(sampling_distribution, n_variables, p):
     sym = {}
     for idx in range(n_variables):
@@ -90,6 +81,7 @@ def epoch_time(start_time, end_time):
     return elapsed_mins, elapsed_secs
 
 def evaluate_fun(args):
+    """Single input algorithm as this function is used in multiprocessing"""
     fun ,support = args
     if type(fun)==list and not len(fun):
         return []

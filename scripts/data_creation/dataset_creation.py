@@ -13,22 +13,36 @@ from nesymres import dclasses
 from pathlib import Path
 import pickle
 from sympy import lambdify 
-from nesymres.utils import create_env
+from nesymres.utils import create_env, H5FilesCreator
 from nesymres.utils import code_unpickler, code_pickler
 import copyreg
 import types
 from itertools import chain
 import traceback
-
+import h5py
 
 
 class Pipepile:
-    def __init__(self, env: generator.Generator, is_timer=False):
+    def __init__(self, env: generator.Generator, number_of_equations, eq_per_block, h5_creator:H5FilesCreator,  is_timer=False):
         self.env = env
-        manager = Manager()
-        self.cnt = manager.list()
+        #manager = Manager()
+        #self.cnt = manager.list()
         self.is_timer = is_timer
+        self.number_of_equations = number_of_equations
         self.fun_args = ",".join(chain(list(env.variables),env.coefficients))
+        self.eq_per_block = eq_per_block
+        self.h5_creator=h5_creator
+
+    def create_block(self,block_idx):
+        block = []
+        counter = block_idx
+        hlimit = block_idx + self.eq_per_block
+        while counter < hlimit and counter < self.number_of_equations:
+            res = self.return_training_set(counter)
+            block.append(res)
+            counter = counter + 1
+        self.h5_creator.create_single_hd5(block_idx//self.eq_per_block, block)
+        return 1
 
     def handler(self,signum, frame):
         raise TimeoutError
@@ -81,16 +95,32 @@ class Pipepile:
 @click.command()
 @click.option(
     "--number_of_equations",
-    default=250,
+    default=200,
+    help="Total number of equations to generate",
+)
+@click.option(
+    "--eq_per_block",
+    default=5e4,
     help="Total number of equations to generate",
 )
 @click.option("--debug/--no-debug", default=True)
-def creator(number_of_equations, debug):
+def creator(number_of_equations,eq_per_block, debug):
     copyreg.pickle(types.CodeType, code_pickler, code_unpickler) #Needed for serializing code objects
     total_number = number_of_equations
+    cpus_available = multiprocessing.cpu_count()
+    eq_per_block= min(total_number//cpus_available, int(eq_per_block))
     warnings.filterwarnings("error")
-    env, config_dict = create_env("config.json")
-    env_pip = Pipepile(env, is_timer=not debug)
+    env, param, config_dict = create_env("config.json")
+    if not debug:
+        folder_path = Path(f"data/raw_datasets/{number_of_equations}") 
+    else:
+        folder_path = Path(f"data/raw_datasets/debug/{number_of_equations}")
+    h5_creator = H5FilesCreator(folder_path)
+    env_pip = Pipepile(env, 
+                      number_of_equations=number_of_equations, 
+                      eq_per_block=eq_per_block,
+                      h5_creator=h5_creator,
+                      is_timer=not debug)
     starttime = time.time()
     func = []
     res = []
@@ -101,46 +131,37 @@ def creator(number_of_equations, debug):
                 max_ = total_number
                 with tqdm(total=max_) as pbar:
                     for f in p.imap_unordered(
-                        env_pip.return_training_set, range(0, total_number)
+                        env_pip.create_block, range(0, total_number, eq_per_block)
                     ):
                         pbar.update()
-                        res.append(f)
+                        #res.append(f)
         except:
             print(traceback.format_exc())
 
 
     else:
-        res = list(map(env_pip.return_training_set, tqdm(range(0, total_number))))
+        list(map(env_pip.create_block, tqdm(range(0, total_number, eq_per_block))))
     
-    dataset = dclasses.Dataset(eqs=res, 
+    dataset = dclasses.DatasetDetails(
                                config=config_dict, 
-                               total_variables=list(env.variables), 
                                total_coefficients=env.coefficients, 
+                               total_variables=list(env.variables), 
                                word2id=env.word2id, 
                                id2word=env.id2word,
                                una_ops=env.una_ops,
                                bin_ops=env.una_ops,
-                               rewrite_functions=env.rewrite_functions)
+                               rewrite_functions=env.rewrite_functions,
+                               total_number_of_eqs=number_of_equations,
+                               eqs_per_hdf=eq_per_block,
+                               generator_details=param)
     print("Expression generation took {} seconds".format(time.time() - starttime))
-    print(
-        "Total number of equations created {}".format(
-            len(res)
-        )
-    )
-    
-    if not debug:
-        folder_path = "data/raw_datasets/" 
-    else:
-        folder_path = "data/raw_datasets/debug" 
-        
     Path(folder_path).mkdir(parents=True, exist_ok=True)
-    if number_of_equations > 1e6:
-        file_name = "{}M".format(int(number_of_equations / 1e6))
-    else:
-        file_name = "{}K".format(int(number_of_equations / 1000))
-    path = os.path.join(folder_path, file_name)
-    with open(path, "wb") as file:
-        pickle.dump(dataset, file)
+    t_hf = h5py.File(os.path.join(folder_path, "metadata.h5") , 'w')
+    t_hf.create_dataset("other", data=np.void(pickle.dumps(dataset)))
+    t_hf.close()
+    # path = os.path.join(folder_path, "metadata.h5")
+    # with open(path, "wb") as file:
+    #     pickle.dump(dataset, file)
 
 if __name__ == "__main__":
     creator()

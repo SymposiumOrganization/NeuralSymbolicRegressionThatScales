@@ -1,5 +1,5 @@
 from .dclasses import Equation
-from .utils import load_dataset
+#from .utils import load_dataset
 import numpy as np
 from sympy import sympify
 import pandas as pd
@@ -17,7 +17,7 @@ def evaluate_model(model_predict,
     model_predict is a callable that takes an X of shape
     (n_datapoints, n_variables) and returns scalar predictions
     """
-    dataset = load_dataset(path)
+    #dataset = load_dataset(path)
     gt_equation, num_variables, supp = get_robust_data(eq,
                                                      cfg)
     print(f'gt_equation: {gt_equation}')

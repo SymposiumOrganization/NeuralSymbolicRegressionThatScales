@@ -35,24 +35,21 @@ class DataModuleParams:
     
 
 
+# @dataclass
+# class Dataset:
+#     eqs: List[Equation]
+#     config: dict
+#     total_coefficients: list
+#     total_variables: list
+#     word2id: dict
+#     id2word: dict
+#     una_ops: list
+#     bin_ops: list
+#     rewrite_functions: list 
+#     unique_index: set = None
+#     total_number_of_eqs: int = 0
 @dataclass
-class Dataset:
-    eqs: List[Equation]
-    config: dict
-    total_coefficients: list
-    total_variables: list
-    word2id: dict
-    id2word: dict
-    una_ops: list
-    bin_ops: list
-    rewrite_functions: list 
-    unique_index: set = None
-    total_number_of_eqs: int = 0
-    
-    
-    
-@dataclass
-class DatasetParams:
+class GeneratorDetails:
     max_len: int
     positive: bool
     env_name: str
@@ -65,59 +62,22 @@ class DatasetParams:
     eos_index: int
     pad_index: int
 
-# @dataclass
-# class DataModuleParams:
-#     #constant_options: ConstantsOptions
-#     #max_number_of_points: int = 500
-#     #type_of_sampling_points: str = ["constant", "logarithm"][1]
-#     #predict_c: bool = False
-#     # fun_support: tuple = (-10,10)
-#     # distribution_support: Distribution = [Uniform, Normal][0]
-#     total_variables: list = None
-#     total_coefficients: list = None
+@dataclass
+class DatasetDetails:
+    #eqs: List[Equation]
+    config: dict
+    total_coefficients: list
+    total_variables: list
+    word2id: dict
+    id2word: dict
+    una_ops: list
+    bin_ops: list
+    rewrite_functions: list 
+    total_number_of_eqs: int
+    eqs_per_hdf: int
+    generator_details: GeneratorDetails
+    unique_index: set = None
     
-# @dataclass_dict_convert()
-# @dataclass(frozen=True)
-# class ArchitectureParams:
-#     sinuisodal_embeddings: bool = False
-#     dec_pf_dim: int = 512
-#     dec_layers: int = 2
-#     dim_hidden: int = 512  
-#     lr: int = 0.0001
-#     dropout: int = 0
-#     num_features: int = 10
-#     ln: bool = True
-#     N_p:int = 0
-#     num_inds: int = 50
-#     activation: str = "relu"
-#     bit16: bool = True
-#     norm: bool = True
-#     linear: bool= False
-#     input_normalization: bool = False
-#     src_pad_idx: int = 0
-#     trg_pad_idx: int = 0
-#     length_eq: int = 60
-#     n_l_enc: int = 2
-#     mean: float = 0.5  
-#     std: float = 0.5 
-#     dim_input: int = 4
-#     num_heads: int = 8
-#     output_dim: int = 60
-#     dropout: float = 0
-
-
-
-# @dataclass
-# class Params:
-#     datamodule_params_train: DataModuleParams = DataModuleParams()
-#     datamodule_params_val: DataModuleParams = DataModuleParams()
-#     datamodule_params_test: DataModuleParams = DataModuleParams()
-#     num_of_workers: int = 0
-#     max_epochs: int = 200
-#     val_check_interval: float = 0.2
-#     precision: int = 16
-#     batch_size: int = 100
-
 
 
 @dataclass

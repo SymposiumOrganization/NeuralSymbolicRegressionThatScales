@@ -51,12 +51,12 @@ class NesymresDataset(data.Dataset):
     ):  
         #m = Manager()
         #self.eqs = m.dict({i:eq for i, eq in enumerate(data.eqs)})
-        other = load_metadata_hdf5(hydra.utils.to_absolute_path(data_path))
-        cfg.total_variables = other.total_variables
-        cfg.total_coefficients = other.total_coefficients
-        self.len = other.total_number_of_eqs
-        self.eqs_per_hdf = other.eqs_per_hdf
-        self.word2id = other.word2id
+        metadata = load_metadata_hdf5(hydra.utils.to_absolute_path(data_path))
+        cfg.total_variables = metadata.total_variables
+        cfg.total_coefficients = metadata.total_coefficients
+        self.len = metadata.total_number_of_eqs
+        self.eqs_per_hdf = metadata.eqs_per_hdf
+        self.word2id = metadata.word2id
         self.data_path = data_path
         self.mode = mode
         self.cfg = cfg

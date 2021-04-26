@@ -88,35 +88,10 @@ def collect_results(cfg):
     df.loc[:,"pred_eq"] = best_eq
     df.loc[:,"duration"] = duration
     df.index = eqs
-    #combined_df = pd.DataFrame(columns,index=list(range(len(eqs))))
-    
-    #list(raw_df.loc[[("other", "benchmark_name")]].values.squeeze())
-    #combined_df["equation"] = best_eq
-    # benchmark_path = list(raw_df.loc[[("other", "benchmark_name")]].values.reshape(-1))
-    # benchmark_path = [hydra.utils.to_absolute_path(x) for x in benchmark_path]
-    # combined_df["benchmark_name"] = benchmark_path
-    # combined_df["equation_idx"] = list(raw_df.loc[[("other", "eq")]].values.reshape(-1)) #FIXME EQ--> EQ_IDX
-    # results = []
-    # utils.drop_not_changing_row(res)  #res.loc[drop_not_changing_row]
-    
-    #combined_df['equation'] = combined_df['equation'].map(standardize_equation) #FIXME x_1 might not be good
-    #combined_df['benchmark_name'] = combined_df['benchmark_name'].map(rename_benchmark)
-
-    # print(f'combined_df: {combined_df}')
-    # print('columns')
-    # pprint(list(combined_df.columns))
 
     eval_rows = []
 
     for idx, df_row in tqdm(df.iterrows(), desc='Evaluate equations...'):
-        
-        # print(f'df_row.equation_idx: {df_row.equation_idx}')
-        # print(f'model_name: {df_row.model_name}')
-        # print(f'equation: {df_row.equation}')
-        # print(f'get_variables(equation): {get_variables(df_row.equation)}')
-        # print(f'num_test_points: {NUM_TEST_POINTS}')
-
-
         if df_row.pred_eq:
             assert getattr(df_row, 'model_path', None) is None
             metrics = evaluate_equation(
@@ -138,7 +113,6 @@ def collect_results(cfg):
         #         pointwise_acc_atol=cfg.POINTWISE_ACC_ATOL
         #     )
         eval_row = df_row.to_dict()
-        
         eval_row.update(metrics)
         eval_rows.append(eval_row)
 
