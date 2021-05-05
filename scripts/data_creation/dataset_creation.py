@@ -115,7 +115,7 @@ def creator(number_of_equations,eq_per_block, debug):
         folder_path = Path(f"data/raw_datasets/{number_of_equations}") 
     else:
         folder_path = Path(f"data/raw_datasets/debug/{number_of_equations}")
-    h5_creator = H5FilesCreator(folder_path)
+    h5_creator = H5FilesCreator(target_path=folder_path)
     env_pip = Pipepile(env, 
                       number_of_equations=number_of_equations, 
                       eq_per_block=eq_per_block,

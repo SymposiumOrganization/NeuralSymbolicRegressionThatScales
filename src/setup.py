@@ -7,6 +7,6 @@ setuptools.setup(
       packages=setuptools.find_packages('.'),
       package_dir={'': '.'},
       install_requires=[
-          'numpy','sympy', 'pandas','click', 'tqdm','numexpr','jsons', "h5py","scipy","dataclass_dict_convert"
+          'numpy','sympy', 'dataclass-dict-converter', 'pandas','click', 'tqdm','numexpr','jsons', "h5py","scipy","dataclass_dict_convert"
       ]
      )
