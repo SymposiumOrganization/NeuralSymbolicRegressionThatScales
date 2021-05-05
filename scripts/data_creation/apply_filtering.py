@@ -23,11 +23,11 @@ def create_hdf_files(metadata, keep_true, base_path: Path, target_path: Path, de
             max_ = n_datasets
             with tqdm(total=max_) as pbar:
                 for f in p.imap_unordered(
-                    h5_creator.create_single_hd5_from_idx, enumerate(sets)
+                    h5_creator.recreate_single_hd5_from_idx, enumerate(sets)
                 ):
                     pbar.update()
     else:
-        t = map(h5_creator.create_single_hd5_from_idx, tqdm(enumerate(sets)))
+        t = map(h5_creator.recreate_single_hd5_from_idx, tqdm(enumerate(sets)))
         target = list(t)
     total_number_of_eqs = len(keep_true)
     metadata.eqs = []

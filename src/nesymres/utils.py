@@ -32,13 +32,13 @@ class H5FilesCreator():
             t_hf.create_dataset(str(i), data=curr)
         t_hf.close()
     
-    def create_single_hd5_from_idx(self,block:Tuple):
+    def recreate_single_hd5_from_idx(self,block:Tuple):
         name_file, eq_idxs = block
         t_hf = h5py.File(os.path.join(self.target_path, str(name_file) + ".h5") , 'w')
         for i, eq_idx in enumerate(eq_idxs):            
             eq = load_eq_raw(self.base_path, eq_idx, self.metadata.eqs_per_hdf)
-            curr = np.void(pickle.dumps(eq))
-            t_hf.create_dataset(str(i), data=curr)
+            #curr = np.void(pickle.dumps(eq))
+            t_hf.create_dataset(str(i), data=eq)
         t_hf.close()
 
 

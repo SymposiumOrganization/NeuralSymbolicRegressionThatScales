@@ -63,7 +63,8 @@ class NesymresDataset(data.Dataset):
         
 
     def __getitem__(self, index):
-        
+        if self.mode == "train":
+            breakpoint()
         eq = load_eq(self.data_path, index, self.eqs_per_hdf)
         code = types.FunctionType(eq.code, globals=globals(), name="f")
         consts, initial_consts = sample_symbolic_constants(eq, self.cfg.constants)
