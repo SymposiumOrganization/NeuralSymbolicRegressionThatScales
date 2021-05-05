@@ -35,7 +35,7 @@ from ..dataset.generator import Generator, UnknownSymPyOperator
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
-from nesymres.dclasses import Dataset, Equation
+from nesymres.dclasses import DatasetDetails, Equation
 from functools import partial
 from ordered_set import OrderedSet
 from pathlib import Path
@@ -67,7 +67,6 @@ class NesymresDataset(data.Dataset):
         eq = load_eq(self.data_path, index, self.eqs_per_hdf)
         code = types.FunctionType(eq.code, globals=globals(), name="f")
         consts, initial_consts = sample_symbolic_constants(eq, self.cfg.constants)
-
         if self.cfg.predict_c:
             eq_string = eq.expr.format(**consts)
         else:
@@ -248,13 +247,6 @@ class DataModule(pl.LightningDataModule):
         self.data_train_path = data_train_path
         self.data_val_path = data_val_path
         self.data_test_path = data_test_path
-        #self.env_path = env_path
-        # self.datamodule_params_train = cfg.datamodule_params_train
-        # self.datamodule_params_val = cfg.datamodule_params_val
-        # self.datamodule_params_test = cfg.datamodule_params_test
-        # self.data_train_path = data_train_path
-        # self.data_val_path = data_val_path 
-        # self.data_test_path = data_test_path 
 
 
     def setup(self, stage=None):
@@ -302,7 +294,8 @@ class DataModule(pl.LightningDataModule):
             shuffle=False,
             collate_fn=partial(custom_collate_fn,cfg= self.cfg.dataset_val),
             num_workers=self.cfg.num_of_workers,
-            pin_memory=True
+            pin_memory=True,
+            drop_last=False
         )
         return validloader
 
@@ -314,7 +307,8 @@ class DataModule(pl.LightningDataModule):
             shuffle=False,
             collate_fn=partial(custom_collate_fn,cfg=self.cfg.dataset_test),
             num_workers=self.cfg.num_of_workers,
-            pin_memory=True
+            pin_memory=True,
+            drop_last=False
         )
 
         return testloader

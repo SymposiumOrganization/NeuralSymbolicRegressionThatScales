@@ -1,10 +1,10 @@
-train_path: data/datasets/20M/hdf_train
-val_path: data/datasets/20M/hdf_val_subset
-test_path: data/datasets/20M/hdf_val_subset
+train_path: data/datasets/10M
+val_path: data/validation
+test_path: data/validation
 model_path: run/True/2021-04-17/20-54-31/Exp_weights/hdf_train_log_-epoch=03-val_loss=0.41.ckpt
 
 wandb: False
-num_of_workers: 64
+num_of_workers: 0
 batch_size: 128
 epochs: 200
 val_check_interval: 0.2

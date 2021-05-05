@@ -63,9 +63,6 @@ class Pipepile:
 
     def convert_lambda(self, i, variables, support):
         sym = self.env.infix_to_sympy(i, self.env.variables, self.env.rewrite_functions)
-        # sym = sym.subs(sp.Symbol("x"), sp.Symbol("x_1"))
-        # sym = sym.subs(sp.Symbol("y"), sp.Symbol("x_2"))
-        # sym = sym.subs(sp.Symbol("z"), sp.Symbol("x_3"))
         placeholder = {x:sp.Symbol(x, real=True,nonzero=True) for x in ["cm","ca"]}
         constants_expression = sym
         consts_elemns = False

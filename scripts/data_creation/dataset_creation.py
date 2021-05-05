@@ -41,13 +41,13 @@ class Pipepile:
             res = self.return_training_set(counter)
             block.append(res)
             counter = counter + 1
-        self.h5_creator.create_single_hd5(block_idx//self.eq_per_block, block)
+        self.h5_creator.create_single_hd5_from_eqs((block_idx//self.eq_per_block, block))
         return 1
 
     def handler(self,signum, frame):
         raise TimeoutError
 
-    def return_training_set(self, i):
+    def return_training_set(self, i) -> dclasses.Equation:
         np.random.seed(i)
         while True:
             try:
@@ -159,9 +159,7 @@ def creator(number_of_equations,eq_per_block, debug):
     t_hf = h5py.File(os.path.join(folder_path, "metadata.h5") , 'w')
     t_hf.create_dataset("other", data=np.void(pickle.dumps(dataset)))
     t_hf.close()
-    # path = os.path.join(folder_path, "metadata.h5")
-    # with open(path, "wb") as file:
-    #     pickle.dump(dataset, file)
+
 
 if __name__ == "__main__":
     creator()
