@@ -70,7 +70,7 @@ class Pipeline:
         
 
 @click.command()
-@click.option("--data_path", default="data/raw_datasets/10M/")
+@click.option("--data_path", default="data/raw_datasets/10000000/")
 @click.option("--csv_path", default="data/benchmark/nc_old.csv")
 @click.option("--debug/--no-debug", default=True)
 def main(data_path,csv_path,debug):
