@@ -126,7 +126,7 @@ def get_robust_data(eq: Equation,mode, cfg):
             break
 
         n_to_replace = to_replace.sum()
-        X[to_replace,:], y[to_replace,:] = get_data(eq,n_to_replace,mode)
+        X[to_replace,:], y[to_replace] = get_data(eq,n_to_replace,mode)
     if to_replace.any():
         #get_data(eq,  eq.number_of_points, mode)
         raise ValueError('Could not sample valid points for equation '
@@ -139,7 +139,7 @@ def get_robust_data(eq: Equation,mode, cfg):
 def load_equation(benchmark_path, equation_idx):
     df = load_data(benchmark_path)
     benchmark_row = df.loc[equation_idx]
-    gt_equation = benchmark_row['eqs']
+    gt_equation = benchmark_row['eq']
     supp = eval(benchmark_row['support'])
     variables = set(supp.keys())
     eq = Equation(code=None, 
@@ -153,9 +153,9 @@ def load_equation(benchmark_path, equation_idx):
 
 def load_data(benchmark_name):
     df = pd.read_csv(benchmark_name)
-    if not all(x in df.columns for x in ["eqs","support","num_points"]):
-        raise ValueError("dataframe not compliant with the format. Ensure that it has eqs, support and num_points as column name")
-    df = df[["eqs","support","num_points"]]
+    if not all(x in df.columns for x in ["eq","support","num_points"]):
+        raise ValueError("dataframe not compliant with the format. Ensure that it has eq, support and num_points as column name")
+    df = df[["eq","support","num_points"]]
     return df    
 
 

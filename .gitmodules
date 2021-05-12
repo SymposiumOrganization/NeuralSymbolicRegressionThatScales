@@ -1,3 +1,3 @@
-[submodule "csem_experimenttracker"]
-	path = csem_experimenttracker
-	url = git@gitlab.csem.local:611/csem_experimenttracker.git
+[submodule "CSEM_ExperimentTracker"]
+	path = CSEM_ExperimentTracker
+	url = https://github.com/SymposiumOrganization/CSEM_ExperimentTracker.git

@@ -1,6 +1,6 @@
 model:
   model_name: nesymres
-  checkpoint_path:  run/True/2021-04-17/20-54-31/Exp_weights/hdf_train_log_-epoch=03-val_loss=0.41.ckpt
+  checkpoint_path:  run/True/2021-05-08/10-23-51/Exp_weights/10000000_log_-epoch=22-val_loss=0.50.ckpt
   beam_size: 2
   bfgs: True
   bfgs_n_restarts: 2
