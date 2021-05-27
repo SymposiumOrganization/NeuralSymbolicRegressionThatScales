@@ -78,7 +78,9 @@ class NesymresDataset(data.Dataset):
         except UnknownSymPyOperator as e:
             print(e)
             return Equation(code=code,expr=[],coeff_dict=consts,variables=eq.variables,support=eq.support, valid=False)
-
+        except RecursionError as e:
+            print(e)
+            return Equation(code=code,expr=[],coeff_dict=consts,variables=eq.variables,support=eq.support, valid=False)
 
         try:
             t = tokenize(eq_sympy_prefix,self.word2id)
