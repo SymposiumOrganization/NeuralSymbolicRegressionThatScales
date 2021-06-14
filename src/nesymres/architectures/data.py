@@ -63,8 +63,6 @@ class NesymresDataset(data.Dataset):
         
 
     def __getitem__(self, index):
-        if self.mode == "train":
-            breakpoint()
         eq = load_eq(self.data_path, index, self.eqs_per_hdf)
         code = types.FunctionType(eq.code, globals=globals(), name="f")
         consts, initial_consts = sample_symbolic_constants(eq, self.cfg.constants)
@@ -80,7 +78,9 @@ class NesymresDataset(data.Dataset):
         except UnknownSymPyOperator as e:
             print(e)
             return Equation(code=code,expr=[],coeff_dict=consts,variables=eq.variables,support=eq.support, valid=False)
-
+        except RecursionError as e:
+            print(e)
+            return Equation(code=code,expr=[],coeff_dict=consts,variables=eq.variables,support=eq.support, valid=False)
 
         try:
             t = tokenize(eq_sympy_prefix,self.word2id)

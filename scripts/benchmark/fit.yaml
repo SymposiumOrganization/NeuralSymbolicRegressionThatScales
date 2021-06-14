@@ -1,9 +1,9 @@
 defaults:
   - model: nesymres
 
-test_path: data/datasets/20M/hdf_val_subset
+test_path: data/validation
 name: results
-benchmark_path: data/benchmark/test.csv
+benchmark_path: data/benchmark/nc_old.csv
 equation_idx: 2
 
 hydra:
@@ -11,4 +11,4 @@ hydra:
       dir: runs/${model.model_name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   overrides:
       task:
-        - equation_idx=range(0,100)  
+        - equation_idx=range(0,200)  

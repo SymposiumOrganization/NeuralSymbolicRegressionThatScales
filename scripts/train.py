@@ -48,7 +48,7 @@ def main(cfg):
 
     trainer = pl.Trainer(
         distributed_backend="ddp",
-        gpus=-1,
+        gpus=4,
         max_epochs=cfg.epochs,
         val_check_interval=cfg.val_check_interval,
         precision=cfg.precision,
@@ -59,5 +59,5 @@ def main(cfg):
 
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # ,1,2,4,5,6,7" Change Me
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"  # ,1,2,4,5,6,7" Change Me
     main()

@@ -40,7 +40,7 @@ def create_hdf_files(metadata, keep_true, base_path: Path, target_path: Path, de
 
 
 @click.command()
-@click.option("--base_path", default="data/raw_datasets/10M/")
+@click.option("--base_path", default="data/raw_datasets/10000000/")
 @click.option("--debug/--no-debug", default=True)
 def main(base_path,debug):
     bool_cond = np.load(os.path.join(base_path,"filtered.npy"),allow_pickle=True)

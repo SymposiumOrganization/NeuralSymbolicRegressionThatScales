@@ -126,8 +126,8 @@ class Model(pl.LightningModule):
 
 
     def fitfunc(self, X,y, cfg_params=None):
-        X_train = X_train.transpose()
-        y_train = y_train[:,None].transpose()
+        X = X.transpose()
+        y = y[:,None].transpose()
         
         X = torch.tensor(X,device=self.device).unsqueeze(0)
         if X.shape[1] < self.cfg.dim_input - 1:

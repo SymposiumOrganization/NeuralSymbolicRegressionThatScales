@@ -74,7 +74,7 @@ def collect_results(cfg):
     
     res = []
     for i in range(len(df)):
-        with open(df.iloc[i,0]) as json_file:
+        with open(df['path'].iloc[i].values[0]) as json_file:
             json_data = json.load(json_file)
             res.append(json_data)
     best_eq = [x["equation"][0] if x["equation"] else None for x in res]
@@ -92,10 +92,10 @@ def collect_results(cfg):
     eval_rows = []
 
     for idx, df_row in tqdm(df.iterrows(), desc='Evaluate equations...'):
-        if df_row.pred_eq:
+        if df_row.pred_eq[0]:
             assert getattr(df_row, 'model_path', None) is None
             metrics = evaluate_equation(
-                pred_equation=df_row.pred_eq,
+                pred_equation=df_row.pred_eq[0],
                 benchmark_name=hydra.utils.to_absolute_path(df_row.loc[[("other", "benchmark_path")]][0]),
                 equation_idx=df_row.loc[[("other", "equation_idx")]][0],
                 cfg=cfg)
@@ -118,7 +118,6 @@ def collect_results(cfg):
 
     
     eval_df = pd.DataFrame(eval_rows)
-
     eval_df.to_csv('eval_df_v2.csv')
 
     return eval_df #, root_dirs
