@@ -1,7 +1,7 @@
 # NeuralSymbolicRegressionThatScales
 Pytorch implementation and pretrained models for the paper "Neural Symbolic Regression That Scales" 
 For details, see **Emerging Properties in Self-Supervised Vision Transformers**.  
-[[`arXiv`](Missing Link] 
+[[`arXiv`](https://arxiv.org/pdf/2106.06427.pdf)] 
 
 
 ## Pretrained models
