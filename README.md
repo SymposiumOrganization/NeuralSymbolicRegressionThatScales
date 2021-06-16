@@ -1,5 +1,5 @@
 # NeuralSymbolicRegressionThatScales
-## The repo documentation is currently on develpement, please check back soon for more information.
+## The repo documentation is currently on development, please check back soon for more information.
 
 Pytorch implementation and pretrained models for the paper "Neural Symbolic Regression That Scales" 
 For details, see **Neural Symbolic Regression That Scales**.  
