@@ -6,7 +6,9 @@ For details, see **Neural Symbolic Regression That Scales**.
 
 ## Pretrained models
 We offers two models "10M" and "100M". The first, trained on a dataset of 10M and with constant prediction set to false, is the one used for experiements in our paper. The second is trained on 100M of equations and with constant prediction set to true.
-For both models, the equations included in data/tests.csv are held out during training
+For both models, the equations included in data/tests.csv are held out during training.
+
+If you want to try the models out, look at the fit_func.ipynb inside the jupyter folder
 
 
 ## Dataset Generation
