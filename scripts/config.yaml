@@ -1,19 +1,19 @@
-train_path: data/datasets/10000000
+train_path: data/dataset/100000000
 val_path: data/validation
 test_path: data/validation
 model_path: run/True/2021-05-08/10-23-51/Exp_weights/10000000_log_-epoch=22-val_loss=0.50.ckpt
 
 wandb: True
 num_of_workers: 28
-batch_size: 128
-epochs: 200
-val_check_interval: 0.2
+batch_size: 25
+epochs: 20
+val_check_interval: 0.02
 precision: 16
 
 dataset_train:
   total_variables: #Do not fill
   total_coefficients: #Do not fill
-  max_number_of_points: 2000
+  max_number_of_points: 800  #2000 before
   type_of_sampling_points: logarithm
   predict_c: True
   fun_support:
@@ -67,8 +67,8 @@ dataset_test:
 architecture:
   sinuisodal_embeddings: False
   dec_pf_dim: 512
-  dec_layers: 2
-  dim_hidden: 512  
+  dec_layers: 5
+  dim_hidden: 512 #512
   lr: 0.0001
   dropout: 0
   num_features: 10
@@ -83,7 +83,7 @@ architecture:
   src_pad_idx: 0
   trg_pad_idx: 0
   length_eq: 60
-  n_l_enc: 2
+  n_l_enc: 5
   mean: 0.5  
   std: 0.5 
   dim_input: 4

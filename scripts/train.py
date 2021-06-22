@@ -33,7 +33,7 @@ def main(cfg):
     )
     model = Model(cfg=cfg.architecture)
     if cfg.wandb:
-        wandb.init(config=architecture_params.to_dict(), project="ICML")
+        wandb.init(project="ICML")
         config = wandb.config
         wandb_logger = WandbLogger()
     else:
@@ -48,16 +48,17 @@ def main(cfg):
 
     trainer = pl.Trainer(
         distributed_backend="ddp",
-        gpus=4,
+        gpus=8,
         max_epochs=cfg.epochs,
         val_check_interval=cfg.val_check_interval,
         precision=cfg.precision,
         logger=wandb_logger,
         callbacks=[checkpoint_callback],
+  #      resume_from_checkpoint='/local/home/lbiggio/NeuralSymbolicRegressionThatScales/run/True/2021-05-27/12-18-49/Exp_weights/100000000_log_-epoch=00-val_loss=0.81.ckpt'
     )
     trainer.fit(model, data)
 
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"  # ,1,2,4,5,6,7" Change Me
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3,4,5,6,7"  # ,1,2,4,5,6,7" Change Me
     main()

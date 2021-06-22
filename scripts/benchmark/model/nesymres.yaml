@@ -1,6 +1,6 @@
 model:
   model_name: nesymres
-  checkpoint_path:  run/True/2021-05-08/10-23-51/Exp_weights/10000000_log_-epoch=22-val_loss=0.50.ckpt
+  checkpoint_path:  run/True/2021-05-30/17-58-53/Exp_weights/100000000_log_-epoch=02-val_loss=0.48.ckpt  
   beam_size: 2
   bfgs: True
   bfgs_n_restarts: 2
@@ -10,7 +10,7 @@ model:
   architecture:
     sinuisodal_embeddings: False
     dec_pf_dim: 512
-    dec_layers: 2
+    dec_layers: 5
     dim_hidden: 512  
     lr: 0.0001
     dropout: 0
@@ -26,7 +26,7 @@ model:
     src_pad_idx: 0
     trg_pad_idx: 0
     length_eq: 60
-    n_l_enc: 2
+    n_l_enc: 5
     mean: 0.5  
     std: 0.5 
     dim_input: 4
