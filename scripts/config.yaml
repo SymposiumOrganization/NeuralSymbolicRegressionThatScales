@@ -1,7 +1,7 @@
 train_path: data/dataset/100000000
 val_path: data/validation
 test_path: data/validation
-model_path: run/True/2021-05-08/10-23-51/Exp_weights/10000000_log_-epoch=22-val_loss=0.50.ckpt
+model_path: weights/100M.ckpt
 
 wandb: True
 num_of_workers: 28

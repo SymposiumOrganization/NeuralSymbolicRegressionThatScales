@@ -126,8 +126,12 @@ class Model(pl.LightningModule):
 
 
     def fitfunc(self, X,y, cfg_params=None):
-        X = X.transpose()
-        y = y[:,None].transpose()
+        """Same API as fit functions in sklearn: 
+            X [Number_of_points, Number_of_features], 
+            Y [Number_of_points]
+        """
+        X = X
+        y = y[:,None]
         
         X = torch.tensor(X,device=self.device).unsqueeze(0)
         if X.shape[1] < self.cfg.dim_input - 1:
@@ -136,7 +140,7 @@ class Model(pl.LightningModule):
         y = torch.tensor(y,device=self.device).unsqueeze(0)
         with torch.no_grad():
 
-            encoder_input = torch.cat((X, y), dim=1).permute(0, 2, 1)
+            encoder_input = torch.cat((X, y), dim=2) #.permute(0, 2, 1)
             # if self.device.type == "cuda":
             #     encoder_input = encoder_input.cuda()
             enc_src = self.enc(encoder_input)
@@ -275,18 +279,18 @@ class Model(pl.LightningModule):
                 )
 
 
-            perc = 0
-            cnt = 0
+            #perc = 0
+            #cnt = 0
             #gts = []
             best_preds = []
             best_preds_bfgs = []
-            best_L = []
+            #best_L = []
             best_L_bfgs = []
 
-            flag = 0
+            #flag = 0
             L_bfgs = []
             P_bfgs = []
-            counter = 1
+            #counter = 1
 
             fun_args = ",".join(chain(cfg_params.total_variables,"constant"))
             cfg_params.id2word[3] = "constant"

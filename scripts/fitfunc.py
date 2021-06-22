@@ -22,7 +22,6 @@ def main(cfg):
     model_path = hydra.utils.to_absolute_path(cfg.model_path)
     test_data = load_metadata_hdf5(hydra.utils.to_absolute_path(cfg.test_path))
 
-
     params_fit = FitParams(word2id=test_data.word2id, 
                             id2word=test_data.id2word, 
                             una_ops=test_data.una_ops, 
@@ -54,7 +53,7 @@ def main(cfg):
             print("Skipping equation because no points are valid")
             continue
         print(f"Testing expressions {eq.expr}")
-        output = fitfunc(X,y) 
+        output = fitfunc(X.T,y.squeeze()) 
         breakpoint()
         print(f"GT: {eq.expr}")
         print(f'Prediction: {output["best_bfgs_preds"]}')

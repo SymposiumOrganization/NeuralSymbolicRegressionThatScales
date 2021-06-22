@@ -46,7 +46,7 @@ def bfgs(pred_str, X, y, cfg):#n_restarts, env, NMSE=True, idx_remove =True, nor
     y = y.squeeze()
     X = X.clone()
     bool_dim = (X==0).all(axis=2).squeeze()
-    X[:,bool_dim,:] = 1
+    X[:,bool_dim,:] = 1 #CHECK ME
     # first_mask_step = [torch.sum(X[0,:,i] == 0) for i in range(X.shape[2])]
     # mask = [(first_mask_step[j] == X.shape[1]).numpy() for j in range(X.shape[2])]
     # x_bfgs = X.clone()
@@ -128,7 +128,6 @@ def bfgs(pred_str, X, y, cfg):#n_restarts, env, NMSE=True, idx_remove =True, nor
     if cfg.bfgs.normalization_o:
         diff = [x/max_eq for x in diffs]
         #diff = [sympify(example).replace(y,xx[1,i]).replace(x,xx[0,i]).replace(z,xx[2,i])-input_batch[i,-1]/max_eq for i in range(input_batch.shape[0])]
-
     loss = 0
     cnt = 0
     if cfg.bfgs.normalization_type == "NMSE": # and (mean != 0):
@@ -165,8 +164,9 @@ def bfgs(pred_str, X, y, cfg):#n_restarts, env, NMSE=True, idx_remove =True, nor
         else:
             funcs.append(final)
         
-        values = {x:X[:,idx,:].cpu() for idx, x in enumerate(cfg.total_variables)}
-        final_loss = np.mean(np.square(sp.lambdify(",".join(cfg.total_variables), final)(**values)-y.cpu()).numpy())
+        values = {x:X[:,:,idx].cpu() for idx, x in enumerate(cfg.total_variables)} #CHECK ME
+        y_found = sp.lambdify(",".join(cfg.total_variables), final)(**values)
+        final_loss = np.mean(np.square(y_found-y.cpu()).numpy())
         F_loss.append(final_loss)
          #early stopping
         # if final_loss < 1e-8:
