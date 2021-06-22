@@ -84,7 +84,7 @@ class DatasetDetails:
 class BFGSParams:
     on: bool = True
     n_restarts: bool = 10
-    add_coefficients_if_not_existing: bool = True
+    add_coefficients_if_not_existing: bool = False
     normalization_o: bool = False
     idx_remove: bool = True
     normalization_type: str = ["MSE","NMSE"][0]

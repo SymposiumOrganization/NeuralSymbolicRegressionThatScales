@@ -41,12 +41,14 @@ class TimedFun:
         return self.fun_value
 
 
-def bfgs(pred_str, X, y, cfg):#n_restarts, env, NMSE=True, idx_remove =True, normalization_o= False):
-    #Check where dimensions not use, and replace them with 1.
+def bfgs(pred_str, X, y, cfg):
+
+    #Check where dimensions not use, and replace them with 1 to avoid numerical issues with BFGS (i.e. absent variables placed in the denominator)
     y = y.squeeze()
     X = X.clone()
-    bool_dim = (X==0).all(axis=2).squeeze()
-    X[:,bool_dim,:] = 1 #CHECK ME
+    bool_dim = (X==0).all(axis=1).squeeze()
+    X[:,:,bool_dim] = 1 
+
     # first_mask_step = [torch.sum(X[0,:,i] == 0) for i in range(X.shape[2])]
     # mask = [(first_mask_step[j] == X.shape[1]).numpy() for j in range(X.shape[2])]
     # x_bfgs = X.clone()
@@ -104,8 +106,8 @@ def bfgs(pred_str, X, y, cfg):#n_restarts, env, NMSE=True, idx_remove =True, nor
 
     if cfg.bfgs.idx_remove:
         print('Flag idx remove ON, Removing indeces with high values...')
-        bool_con = (X<200).all(axis=1).squeeze() 
-        X = X[:,:,bool_con]
+        bool_con = (X<200).all(axis=2).squeeze() 
+        X = X[:,bool_con,:]
         # idx_leave = np.where((np.abs(input_batch[:,3].numpy()))<200)[0]
         # xx = xx[:,idx_leave]
         # input_batch = input_batch[idx_leave,:]
@@ -117,15 +119,16 @@ def bfgs(pred_str, X, y, cfg):#n_restarts, env, NMSE=True, idx_remove =True, nor
         print('Attention, input values are very large. Optimization may fail due to numerical issues')
 
     diffs = []
-    for i in range(X.shape[2]):
+    for i in range(X.shape[1]):
         curr_expr = expr
         for idx, j in enumerate(cfg.total_variables):
-            curr_expr = sp.sympify(curr_expr).subs(j,X[:,idx,i]) 
+            curr_expr = sp.sympify(curr_expr).subs(j,X[:,i,idx]) 
         diff = curr_expr - y[i]
         diffs.append(diff)
     #         breakpoint()
     # diff = [sp.sympify(example).replace(y,xx[1,i]).replace(x,xx[0,i]).replace(z,xx[2,i])-input_batch[i,-1] for i in range(input_batch.shape[0])]
     if cfg.bfgs.normalization_o:
+        raise NotImplementedError
         diff = [x/max_eq for x in diffs]
         #diff = [sympify(example).replace(y,xx[1,i]).replace(x,xx[0,i]).replace(z,xx[2,i])-input_batch[i,-1]/max_eq for i in range(input_batch.shape[0])]
     loss = 0
@@ -154,8 +157,11 @@ def bfgs(pred_str, X, y, cfg):#n_restarts, env, NMSE=True, idx_remove =True, nor
         s = list(symbols.values())
         #bfgs optimization
         fun_timed = TimedFun(fun=sp.lambdify(s,loss, modules=['numpy']), stop_after=cfg.bfgs.stop_time)
-        minimize(fun_timed.fun,x0, method='BFGS')   #check consts interval and if they are int
-        consts_.append(fun_timed.x)
+        if len(x0):
+            minimize(fun_timed.fun,x0, method='BFGS')   #check consts interval and if they are int
+            consts_.append(fun_timed.x)
+        else:
+            consts_.append([])
         final = expr
         for i in range(len(s)):
             final = sp.sympify(final).replace(s[i],fun_timed.x[i])
@@ -166,7 +172,7 @@ def bfgs(pred_str, X, y, cfg):#n_restarts, env, NMSE=True, idx_remove =True, nor
         
         values = {x:X[:,:,idx].cpu() for idx, x in enumerate(cfg.total_variables)} #CHECK ME
         y_found = sp.lambdify(",".join(cfg.total_variables), final)(**values)
-        final_loss = np.mean(np.square(y_found-y.cpu()).numpy())
+        final_loss = np.mean(np.square(y_found.squeeze()-y.cpu()).numpy())
         F_loss.append(final_loss)
          #early stopping
         # if final_loss < 1e-8:

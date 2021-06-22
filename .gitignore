@@ -9,3 +9,5 @@ wandb/*
 outputs/*
 runs/*
 run/*
+weights/*
+old/*
