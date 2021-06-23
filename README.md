@@ -6,6 +6,19 @@ For details, see **Neural Symbolic Regression That Scales**.
 [[`arXiv`](https://arxiv.org/pdf/2106.06427.pdf)] 
 
 
+## Installation
+Please clone and install this repository via
+
+```
+git clone https://github.com/SymposiumOrganization/NeuralSymbolicRegressionThatScales.git
+cd NeuralSymbolicRegressionThatScales/
+pip3 install . -e
+```
+
+This library requires python>3.7
+
+
+
 ## Pretrained models
 We offers two models "10M" and "100M". The first, trained on a dataset of 10M and with constant prediction set to false, is the one used for experiements in our paper. The second is trained on 100M of equations and with constant prediction set to true.
 For both models, the equations included in data/tests.csv are held out during training.
