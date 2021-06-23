@@ -16,17 +16,29 @@ If you want to try the models out, look at **jupyter/fit_func.ipynb**.
 ## Dataset Generation
 Before training, you need a dataset of equations. 
 There are two ways to generate this dataset:
-1) If you are running on linux, you use makefile as follows:
-First define and export a variable command export ```NUM=${NumberOfEquationsYouWant}```.
-NumberOfEquationsYouWant can be defined in two formats with K or M suffix. For instance 100K is equal to 100 000 while 10M is equal to 10 000 000
 
-2) Run the following scirpts in order with your required parameters:
+1) If you are running on linux, you use makefile in terminal as follows:
+```
+NUM=${NumberOfEquationsYouWant} #Export num variable
+make data/raw_datasets/${NUM}: #Launch make file command
+```
+NumberOfEquationsYouWant can be defined in two formats with K or M suffix. For instance 100K is equal to 100'000 while 10M is equal to 10'0000000
+
+
+2) Run this script: 
 ```
 python3 scripts/data_creation/dataset_creation.py --number_of_equations 100000 --no-debug #Replace 100000 with the number of equations you want to generate
+```
+
+Next step is to remove from the generated training data a set of validation equations.
+
+
 python3 scripts/data_creation/filter_from_already_existing.py --data_path data/raw_datasets/${NUM} --csv_path pathToValidate equations #You can leave csv_path empty if you want to create a validation set
 python3 scripts/data_creation/filter_validation.py --val_path data/datasets/${NUM}/${NUM}_val
 python3 scripts/data_creation/to_h5.py --folder_dataset data/datasets/${NUM} 
 ```
+
+
 
 Code for generating the dataset is largely based on [https://github.com/facebookresearch/SymbolicMathematics]
 
