@@ -10,9 +10,10 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning import Trainer, seed_everything
 from typing import Tuple
+from nesymres.architectures.bfgs import bfgs
 from nesymres.architectures.model import Model
 from nesymres.architectures.data import DataModule
-from nesymres.dclasses import DataModuleParams, FitParams, NNEquation
+from nesymres.dclasses import BFGSParams, FitParams, NNEquation
 from nesymres.utils import load_metadata_hdf5
 from functools import partial
 import hydra
@@ -22,13 +23,25 @@ def main(cfg):
     model_path = hydra.utils.to_absolute_path(cfg.model_path)
     test_data = load_metadata_hdf5(hydra.utils.to_absolute_path(cfg.test_path))
 
+
+    bfgs = BFGSParams(
+        activated= cfg.inference.bfgs.activated,
+        n_restarts=cfg.inference.bfgs.n_restarts,
+        add_coefficients_if_not_existing=cfg.inference.bfgs.add_coefficients_if_not_existing,
+        normalization_o=cfg.inference.bfgs.normalization_o,
+        idx_remove=cfg.inference.bfgs.idx_remove,
+        normalization_type=cfg.inference.bfgs.normalization_type,
+        stop_time=cfg.inference.bfgs.stop_time,
+    )
     params_fit = FitParams(word2id=test_data.word2id, 
                             id2word=test_data.id2word, 
                             una_ops=test_data.una_ops, 
                             bin_ops=test_data.bin_ops, 
                             total_variables=list(test_data.total_variables),  
                             total_coefficients=list(test_data.total_coefficients),
-                            rewrite_functions=list(test_data.rewrite_functions)
+                            rewrite_functions=list(test_data.rewrite_functions),
+                            bfgs=bfgs,
+                            beam_size=cfg.inference.beam_size
                             )
 
     data = DataModule(

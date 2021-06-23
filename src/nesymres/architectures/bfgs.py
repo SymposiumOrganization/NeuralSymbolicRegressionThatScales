@@ -49,13 +49,6 @@ def bfgs(pred_str, X, y, cfg):
     bool_dim = (X==0).all(axis=1).squeeze()
     X[:,:,bool_dim] = 1 
 
-    # first_mask_step = [torch.sum(X[0,:,i] == 0) for i in range(X.shape[2])]
-    # mask = [(first_mask_step[j] == X.shape[1]).numpy() for j in range(X.shape[2])]
-    # x_bfgs = X.clone()
-    # for i in range(X.shape[2]):
-    #     if mask[i] == True:
-    #         x_bfgs[:,:,i] = X[:,:,i]+1 #BFGS wants 1 for a non existing variable 
-    # bfgs_input = torch.cat((x_bfgs, y), dim=1)
     pred_str = pred_str[1:].tolist()
     #pred_str = [x if x<14 else x+1 for x in pred_str]
     raw = data.de_tokenize(pred_str, cfg.id2word)
@@ -96,13 +89,6 @@ def bfgs(pred_str, X, y, cfg):
 
     
     print('Constructing BFGS loss...')
-    # input_batch = input_batch.cpu() 
-    # xx = X[:,: len(cfg.total_variables)].T  
-    #construct loss function
-    # x = Symbol('x')
-    # y = Symbol('y')
-    # z = Symbol('z')
-
 
     if cfg.bfgs.idx_remove:
         print('Flag idx remove ON, Removing indeces with high values...')

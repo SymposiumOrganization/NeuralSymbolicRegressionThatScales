@@ -82,7 +82,7 @@ class DatasetDetails:
 
 @dataclass
 class BFGSParams:
-    on: bool = True
+    activated: bool = True
     n_restarts: bool = 10
     add_coefficients_if_not_existing: bool = False
     normalization_o: bool = False
