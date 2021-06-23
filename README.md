@@ -17,7 +17,7 @@ If you want to try the models out, look at **jupyter/fit_func.ipynb**.
 Before training, you need a dataset of equations. 
 There are two ways to generate this dataset:
 1) If you are running on linux, you use makefile as follows:
-First define and export a variable command export NUM=${NumberOfEquationsYouWant}. 
+First define and export a variable command export ```NUM=${NumberOfEquationsYouWant}```.
 NumberOfEquationsYouWant can be defined in two formats with K or M suffix. For instance 100K is equal to 100 000 while 10M is equal to 10 000 000
 
 2) Run the following scirpts in order with your required parameters:
