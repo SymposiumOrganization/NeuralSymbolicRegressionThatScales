@@ -50,7 +50,7 @@ make data/raw_datasets/10M: #Launch make file command
 python3 scripts/data_creation/dataset_creation.py --number_of_equations NumberOfEquations --no-debug #Replace NumberOfEquations with the number of equations you want to generate
 ```
 
-After this command you will have a folder named **data/raw_data/NumberOfEquations** containing .h5 files. By default, each of this h5 files contains a maximum of 5e4 equations. The code generators scripts are based on Code for generating the dataset is largely based on [https://github.com/facebookresearch/SymbolicMathematics]
+After this command you will have a folder named **data/raw_data/NumberOfEquations** containing .h5 files. By default, each of this h5 files contains a maximum of 5e4 equations. The equation generator scripts are based on [https://github.com/facebookresearch/SymbolicMathematics]
 
 
 ### Raw test dataset generation
