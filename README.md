@@ -32,14 +32,14 @@ There are two ways to generate this dataset:
 
 * If you are running on linux, you use makefile in terminal as follows:
 ```
-NUM=${NumberOfEquationsYouWant} #Export num variable
+export NUM=${NumberOfEquationsYouWant} #Export num variable
 make data/raw_datasets/${NUM}: #Launch make file command
 ```
 NumberOfEquationsYouWant can be defined in two formats with K or M suffix. For instance 100K is equal to 100'000 while 10M is equal to 10'0000000
 For example, if you want to create a 10M dataset simply:
 
 ```
-NUM=10M #Export num variable
+export NUM=10M #Export num variable
 make data/raw_datasets/10M: #Launch make file command
 ```
 
