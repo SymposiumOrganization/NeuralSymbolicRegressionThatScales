@@ -1,5 +1,7 @@
 train_path: data/dataset/100000000
 val_path: data/validation
+
+raw_test_path: data/raw_datasets/150
 test_path: data/validation
 model_path: weights/100M.ckpt
 

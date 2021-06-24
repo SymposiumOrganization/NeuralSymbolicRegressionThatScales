@@ -72,7 +72,7 @@ class Pipeline:
 @click.command()
 @click.option("--data_path", default="data/raw_datasets/10000000/")
 @click.option("--csv_path", default="data/benchmark/nc_old.csv")
-@click.option("--debug/--no-debug", default=True)
+@click.option("--debug/--no-debug", default=False)
 def main(data_path,csv_path,debug):
     print("Loading metadata")
     metatada = load_metadata_hdf5(data_path)
@@ -84,7 +84,7 @@ def main(data_path,csv_path,debug):
     print("Creating image for validation set")
     target_image = evaluate_validation_set(validation,support)
     pipe = Pipeline(data_path, metatada, support, target_image)
-    print("Starting finding out index equations in the validation set")
+    print("Starting finding out index of equations present in the validation set or wih numerical problems")
     total_eq = int(metatada.total_number_of_eqs)
     res = []
     if not debug:
