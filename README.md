@@ -67,8 +67,9 @@ Now you convert the newly created validation dataset in the csv format. First in
 
 This command will create csv file named test.csv in the test_set folder.
 
-### Remove test equations from the training dataset
+### Remove test and numerical problematic equations from the training dataset 
 
+```
 python3 scripts/data_creation/filter_from_already_existing.py --data_path data/raw_datasets/${NUM} --csv_path pathToValidate equations #You can leave csv_path empty if you want to create a validation set
 python3 scripts/data_creation/filter_validation.py --val_path data/datasets/${NUM}/${NUM}_val
 python3 scripts/data_creation/to_h5.py --folder_dataset data/datasets/${NUM} 
