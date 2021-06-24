@@ -54,7 +54,14 @@ After this command you will have a folder named **data/raw_data/NumberOfEquation
 
 ### Raw test/validation dataset generation
 This step is optional. You can skip it if you want to use our test set used for the paper (located in **test_set/nc.csv**).
-Use the same commands as before for generating a validation dataset. All equations in this dataset will be remove from the training dataset in the next stage, hence this validation dataset should be **small**. For our paper it constisted of 200 equations.
+Use the same commands as before for generating a validation dataset. All equations in this dataset will be remove from the training dataset in the next stage, 
+hence this validation dataset should be **small**. For our paper it constisted of 200 equations.
+
+```
+#Code for generating a 200 equation dataset
+export NUM=200 #Export num variable
+make data/raw_datasets/200: #Launch make file command
+```
 
 Next step is to remove from the generated training data a set of validation equations.
 
