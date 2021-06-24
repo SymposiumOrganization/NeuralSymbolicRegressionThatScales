@@ -50,7 +50,8 @@ make data/raw_datasets/10M: #Launch make file command
 python3 scripts/data_creation/dataset_creation.py --number_of_equations NumberOfEquations --no-debug #Replace NumberOfEquations with the number of equations you want to generate
 ```
 
-After this command you will have a folder named **data/raw_data/NumberOfEquations** containing .h5 files. By default, each of this h5 files contains a maximum of 5e4 equations.
+After this command you will have a folder named **data/raw_data/NumberOfEquations** containing .h5 files. By default, each of this h5 files contains a maximum of 5e4 equations. The code generators scripts are based on Code for generating the dataset is largely based on [https://github.com/facebookresearch/SymbolicMathematics]
+
 
 ### Raw test dataset generation
 This step is optional. You can skip it if you want to use our test set used for the paper (located in **test_set/nc.csv**).
@@ -64,7 +65,9 @@ python3 scripts/data_creation/dataset_creation.py --number_of_equations 150 --no
 
 Now you convert the newly created validation dataset in the csv format. First in **scripts/config.yaml** replace the entry of *raw_test_path* with the path to your test set. For instance if you have created a dataset equations it would be **data/raw_datasets/150**) then run: `python3 scripts/csv_handling/dataload_format_to_csv.py`
 
+This command will create csv file named test.csv in the test_set folder.
 
+### Remove test equations from the training dataset
 
 python3 scripts/data_creation/filter_from_already_existing.py --data_path data/raw_datasets/${NUM} --csv_path pathToValidate equations #You can leave csv_path empty if you want to create a validation set
 python3 scripts/data_creation/filter_validation.py --val_path data/datasets/${NUM}/${NUM}_val
@@ -73,7 +76,6 @@ python3 scripts/data_creation/to_h5.py --folder_dataset data/datasets/${NUM}
 
 
 
-Code for generating the dataset is largely based on [https://github.com/facebookresearch/SymbolicMathematics]
 
 ## Training
 Once you have created your training and validation datasets run 
