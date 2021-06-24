@@ -52,18 +52,18 @@ python3 scripts/data_creation/dataset_creation.py --number_of_equations NumberOf
 
 After this command you will have a folder named **data/raw_data/NumberOfEquations** containing .h5 files. By default, each of this h5 files contains a maximum of 5e4 equations.
 
-### Raw test/validation dataset generation
+### Raw test dataset generation
 This step is optional. You can skip it if you want to use our test set used for the paper (located in **test_set/nc.csv**).
 Use the same commands as before for generating a validation dataset. All equations in this dataset will be remove from the training dataset in the next stage, 
 hence this validation dataset should be **small**. For our paper it constisted of 200 equations.
 
 ```
-#Code for generating a 200 equation dataset
-export NUM=200 #Export num variable
-make data/raw_datasets/200: #Launch make file command
+#Code for generating a 150 equation dataset 
+python3 scripts/data_creation/dataset_creation.py --number_of_equations 150 --no-debug 
 ```
 
-Next step is to remove from the generated training data a set of validation equations.
+Now you convert the newly created validation dataset in the csv format. First in **scripts/config.yaml** replace the entry of *raw_test_path* with the path to your test set. For instance if you have created a dataset equations it would be **data/raw_datasets/150**) then run: `python3 scripts/csv_handling/dataload_format_to_csv.py`
+
 
 
 python3 scripts/data_creation/filter_from_already_existing.py --data_path data/raw_datasets/${NUM} --csv_path pathToValidate equations #You can leave csv_path empty if you want to create a validation set
