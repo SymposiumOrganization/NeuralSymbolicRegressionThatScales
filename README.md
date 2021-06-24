@@ -1,5 +1,5 @@
 # NeuralSymbolicRegressionThatScales
-## The repo documentation is currently on development, please check back soon for more information.
+## The repo documentation is currently under development, please check back soon for more information.
 
 Pytorch implementation and pretrained models for the paper "Neural Symbolic Regression That Scales" 
 For details, see **Neural Symbolic Regression That Scales**.  
@@ -30,15 +30,19 @@ If you want to try the models out, look at **jupyter/fit_func.ipynb**.
 Before training, you need a dataset of equations. 
 There are two ways to generate this dataset:
 
-1) If you are running on linux, you use makefile in terminal as follows:
+* If you are running on linux, you use makefile in terminal as follows:
 ```
 NUM=${NumberOfEquationsYouWant} #Export num variable
 make data/raw_datasets/${NUM}: #Launch make file command
 ```
 NumberOfEquationsYouWant can be defined in two formats with K or M suffix. For instance 100K is equal to 100'000 while 10M is equal to 10'0000000
+For example, if you want to create a 10M dataset simply:
+```
+NUM=10M #Export num variable
+make data/raw_datasets/10M: #Launch make file command
+```
 
-
-2) Run this script: 
+* Run this script: 
 ```
 python3 scripts/data_creation/dataset_creation.py --number_of_equations 100000 --no-debug #Replace 100000 with the number of equations you want to generate
 ```
