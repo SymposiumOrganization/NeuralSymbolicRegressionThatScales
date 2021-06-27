@@ -1,3 +1,4 @@
+from typing import Tuple
 import torch
 import torch.nn as nn
 from torch.utils.data import SubsetRandomSampler
@@ -104,17 +105,30 @@ def evaluate_fun(args):
 
 
 
-def sample_symbolic_constants(eq: Equation, cfg) -> dict:
-    initial_consts = {const: 1 if const[:2] == "cm" else 0 for const in eq.coeff_dict.keys()}
-    consts = initial_consts.copy()
-    
-    used_consts = random.randint(0, min(len(eq.coeff_dict),cfg.num_constants))
-    symbols_used = random.sample(set(eq.coeff_dict.keys()), used_consts)
-    for si in symbols_used:
-        if si[:2] == "ca":
-            consts[si] = round(float(Uniform(cfg.additive.min, cfg.additive.max).sample()),3)
-        elif si[:2] == "cm":
-            consts[si] = round(float(Uniform(cfg.additive.min, cfg.additive.max).sample()),3)
-        else:
-            raise KeyError
-    return consts, initial_consts
+def sample_symbolic_constants(eq: Equation, cfg=None) -> Tuple:
+    """Given an equation, returns randomly sampled constants and dummy contants
+
+    Args:
+      eq: an Equation.
+      cfg: Used for specifying how many and in which range to sample constants. If None, consts equal to dummy_consts
+
+    Returns:
+      consts: 
+      dummy_consts: 
+    """
+
+    dummy_consts = {const: 1 if const[:2] == "cm" else 0 for const in eq.coeff_dict.keys()}
+    consts = dummy_consts.copy()
+    if cfg:
+        used_consts = random.randint(0, min(len(eq.coeff_dict),cfg.num_constants))
+        symbols_used = random.sample(set(eq.coeff_dict.keys()), used_consts)
+        for si in symbols_used:
+            if si[:2] == "ca":
+                consts[si] = round(float(Uniform(cfg.additive.min, cfg.additive.max).sample()),3)
+            elif si[:2] == "cm":
+                consts[si] = round(float(Uniform(cfg.additive.min, cfg.additive.max).sample()),3)
+            else:
+                raise KeyError
+    else:
+        consts = dummy_consts
+    return consts, dummy_consts
