@@ -5,7 +5,7 @@ import pandas as pd
 from torch.distributions.uniform import Uniform
 from nesymres.dataset.data_utils import create_uniform_support, sample_symbolic_constants, evaluate_fun, return_dict_metadata_dummy_constant
 import warnings
-from sympy import lambdify,sympify
+from sympy import lambdify,sympify, simplify
 import multiprocessing
 import torch
 from tqdm import tqdm
