@@ -6,7 +6,7 @@ from torch.distributions.uniform import Uniform
 from nesymres.dataset.data_utils import create_uniform_support, sample_symbolic_constants
 from nesymres.dataset.data_utils import evaluate_fun
 import warnings
-from sympy import lambdify,sympify
+from sympy import lambdify,sympify, simplify
 import multiprocessing
 import torch
 from tqdm import tqdm
@@ -49,40 +49,30 @@ class Pipeline:
         Args:
             idx: index to the Eq in the dataset
         """
-        consts = torch.stack([torch.ones([int(self.support.shape[1])]) for i in self.metadata.total_coefficients])
-        input_lambdi = torch.cat([self.support,consts],axis=0)
-        assert input_lambdi.shape[0]  == len(self.metadata.total_coefficients) + len(self.metadata.total_variables)
+        # consts = torch.stack([torch.ones([int(self.support.shape[1])]) for i in self.metadata.total_coefficients])
+        # input_lambdi = torch.cat([self.support,consts],axis=0)
+        # assert input_lambdi.shape[0]  == len(self.metadata.total_coefficients) + len(self.metadata.total_variables)
         eq = load_eq(self.data_path, idx, self.metadata.eqs_per_hdf)
-        variables = [f"x_{i}" for i in range(1,1+self.support.shape[0])]
-        consts = [c for c in self.metadata.total_coefficients]
+        # variables = [f"x_{i}" for i in range(1,1+self.support.shape[0])]
+        # consts = [c for c in self.metadata.total_coefficients]
         #symbols = variables + consts
         
         #Symbol Checking
         const, dummy_const = sample_symbolic_constants(eq)
-        eq_str = sympify(eq.expr.format(**dummy_const))
-        assert not eq_str in self.validation_eqs
+        eq_str = str(simplify(sympify(eq.expr.format(**dummy_const))))
+        if eq_str in self.validation_eqs:
+            print(idx)
+            print(eq_str)
+        #assert not eq_str in self.validation_eqs
         
-
-        args = [ eq.code,input_lambdi ]
-        y = evaluate_fun(args)
-        val = tuple(y)
-        # if val == tuple([]):
-        #     print("Not an equation")
-        #     return idx, False
-        # if val == tuple([float("-inf")]*input_lambdi.shape[-1]):
-        #     print("Found all Inf")
-        #     return idx, False
-        # if val == tuple([float("+inf")]*input_lambdi.shape[-1]):
-        #    print("Found all -Inf")
-        #    return idx, False
-        # if val == tuple([float(0)]*input_lambdi.shape[-1]):
-        #     print("Found all zeros")
-        #     return idx, False
-        # if val == tuple([float("nan")]*input_lambdi.shape[-1]):
-        #     print("Found all nans")
-        #     return idx, False
+        #Numerical Checking
+        # args = [ eq.code,input_lambdi ]
+        # y = evaluate_fun(args)
+        # val = tuple(y)
         
-        assert not (val in self.target_image)
+        # if (val in self.target_image):
+        #     print("Validation set {}:".format(list(self.target_image).index(val)))
+        #     print("Equation in dataset {}".format(idx))
         #     print("Found in validation")
         #     return idx, False
         # return idx, True
