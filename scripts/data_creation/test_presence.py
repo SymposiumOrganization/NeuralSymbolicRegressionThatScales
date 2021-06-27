@@ -3,8 +3,7 @@ from nesymres.utils import load_eq, load_metadata_hdf5
 import click
 import pandas as pd
 from torch.distributions.uniform import Uniform
-from nesymres.dataset.data_utils import create_uniform_support, sample_symbolic_constants
-from nesymres.dataset.data_utils import evaluate_fun
+from nesymres.dataset.data_utils import create_uniform_support, sample_symbolic_constants, evaluate_fun, return_dict_metadata_dummy_constant
 import warnings
 from sympy import lambdify,sympify
 import multiprocessing
@@ -12,36 +11,42 @@ import torch
 from tqdm import tqdm
 import numpy as np
 import os
+from multiprocessing import Manager
 
 
-def evaluate_validation_set(validation_eqs: pd.DataFrame, support) -> set:
-    res = set()
+
+def evaluate_validation_set(validation_eqs: pd.DataFrame, support) -> list:
+    res = list()
     for _, row in validation_eqs.iterrows():
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             variables = [f"x_{i}" for i in range(1,1+support.shape[0])]
             curr = tuple(lambdify(variables,row["eq"])(*support).numpy().astype('float16'))
-            res.add(curr)
+            res.append(curr)
     return res
 
 
 class Pipeline:
     """"""
-    def __init__(self, data_path, metadata, support, target_image, validation_eqs: set):
+    def __init__(self, data_path, metadata, support, target_image: list, validation_eqs: set):
         """
         Args:
             param1: 
             param2: 
             support: 
             target_image: 
+            target_image_l:
             validation_eqs: A set containing all the validation equations in a str format and without constant placeholders. 
                             This argument is used for the symbol checking
         """
         self.data_path = data_path
         self.metadata = metadata
         self.support = support
-        self.target_image = target_image
-        self.validation_eqs = validation_eqs
+        self.target_image_l = target_image
+        self.target_image = set(target_image)
+        self.validation_eqs_l = validation_eqs
+        self.validation_eqs = set(validation_eqs)
+        self.res = Manager().dict()
 
     def is_valid_and_not_in_validation_set(self, idx: int) -> bool:
         """
@@ -49,44 +54,40 @@ class Pipeline:
         Args:
             idx: index to the Eq in the dataset
         """
-        consts = torch.stack([torch.ones([int(self.support.shape[1])]) for i in self.metadata.total_coefficients])
+        eq = load_eq(self.data_path, idx, self.metadata.eqs_per_hdf)
+        dict_costs = return_dict_metadata_dummy_constant(self.metadata)
+        #const, dummy_const = sample_symbolic_constants(eq)
+        consts = torch.stack([torch.ones([int(self.support.shape[1])])*dict_costs[key] for key in dict_costs.keys()])
+
+        #consts = torch.stack([torch.ones([int(self.support.shape[1])]) for i in self.metadata.total_coefficients])
         input_lambdi = torch.cat([self.support,consts],axis=0)
         assert input_lambdi.shape[0]  == len(self.metadata.total_coefficients) + len(self.metadata.total_variables)
-        eq = load_eq(self.data_path, idx, self.metadata.eqs_per_hdf)
-        variables = [f"x_{i}" for i in range(1,1+self.support.shape[0])]
-        consts = [c for c in self.metadata.total_coefficients]
+        #eq = load_eq(self.data_path, idx, self.metadata.eqs_per_hdf)
+        #variables = [f"x_{i}" for i in range(1,1+self.support.shape[0])]
+        #consts = [c for c in self.metadata.total_coefficients]
         #symbols = variables + consts
         
         #Symbol Checking
         const, dummy_const = sample_symbolic_constants(eq)
         eq_str = sympify(eq.expr.format(**dummy_const))
-        assert not eq_str in self.validation_eqs
+        # if str(eq_str) in self.validation_eqs:
+        #     print(eq_str)
+        #     # print(idx)
+        
         
 
         args = [ eq.code,input_lambdi ]
         y = evaluate_fun(args)
         val = tuple(y)
-        # if val == tuple([]):
-        #     print("Not an equation")
-        #     return idx, False
-        # if val == tuple([float("-inf")]*input_lambdi.shape[-1]):
-        #     print("Found all Inf")
-        #     return idx, False
-        # if val == tuple([float("+inf")]*input_lambdi.shape[-1]):
-        #    print("Found all -Inf")
-        #    return idx, False
-        # if val == tuple([float(0)]*input_lambdi.shape[-1]):
-        #     print("Found all zeros")
-        #     return idx, False
-        # if val == tuple([float("nan")]*input_lambdi.shape[-1]):
-        #     print("Found all nans")
-        #     return idx, False
-        
-        assert not (val in self.target_image)
-        #     print("Found in validation")
-        #     return idx, False
-        # return idx, True
-
+        if val in self.target_image:
+            index = self.target_image_l.index(val)
+            if not index in self.res:
+                self.res[index] =  self.validation_eqs_l[index]
+                print(len(self.res))
+            
+            # print(eq_str)
+            # print(idx)
+            # breakpoint()
         
 
 @click.command()
@@ -101,7 +102,7 @@ def main(data_path,csv_path,debug):
     support = create_uniform_support(sampling_distribution, len(metatada.total_variables), num_p)
     print("Creating image for validation set")
     target_image = evaluate_validation_set(validation,support)
-    pipe = Pipeline(data_path, metatada, support, target_image,  set(validation["eq"]))
+    pipe = Pipeline(data_path, metatada, support, target_image,  list(validation["eq"]))
     total_eq = int(metatada.total_number_of_eqs)
     res = []
     if not debug:
@@ -114,6 +115,7 @@ def main(data_path,csv_path,debug):
                     res.append(evaled)
     else:
         res = list(map(pipe.is_valid_and_not_in_validation_set, tqdm(range(total_eq))))
+    
 
 
 if __name__=="__main__":

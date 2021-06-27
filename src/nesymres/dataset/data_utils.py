@@ -1,5 +1,6 @@
 from typing import Tuple
 import torch
+from torch._C import Value
 import torch.nn as nn
 from torch.utils.data import SubsetRandomSampler
 import numpy as np
@@ -102,6 +103,17 @@ def evaluate_fun(args):
         print(e)
         return []
 
+def return_dict_metadata_dummy_constant(metadata):
+    dict = {key:0 for key in metadata.total_coefficients}
+    for key in dict.keys():
+        if key[:2] == "cm":
+            dict[key] = 1
+        elif key[:2] == "ca":
+            dict[key] = 0
+        else:
+            raise KeyError
+    return dict
+    
 
 
 
