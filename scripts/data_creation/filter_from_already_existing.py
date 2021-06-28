@@ -4,7 +4,7 @@ from nesymres.utils import load_eq, load_metadata_hdf5
 from nesymres.dataset.data_utils import evaluate_fun
 import pandas as pd
 from collections import defaultdict
-from nesymres.dataset.data_utils import create_uniform_support, sample_symbolic_constants
+from nesymres.dataset.data_utils import create_uniform_support, sample_symbolic_constants, evaluate_fun, return_dict_metadata_dummy_constant
 #from nesymres.benchmark import return_order_variables
 from torch.distributions.uniform import Uniform
 import torch
@@ -15,7 +15,7 @@ import os
 #from pathlib import Path
 #import pickle
 import warnings
-from sympy import lambdify
+from sympy import lambdify,sympify
 
 
 def evaluate_validation_set(validation_eqs: pd.DataFrame, support) -> set:
@@ -36,38 +36,53 @@ class Pipeline:
         self.support = support
         self.target_image = target_image
 
-    def is_valid_and_not_in_validation_set(self, index) -> bool:
-        eq = load_eq(self.data_path, index, self.metadata.eqs_per_hdf)
-        const, dummy_const = sample_symbolic_constants(eq)
-        consts = torch.stack([torch.ones([int(self.support.shape[1])])*const[key] for key in const.keys()])
-        #Symbol Checking
+    def is_valid_and_not_in_validation_set(self, idx:int) -> bool:
+        """
+        Return True if an equation is not the validation set and is numerically meaningfull (i.e. values all differs from nan, -inf, +inf, all zeros),
+               We test whether is in the validation dataset both symbolically and numerically
+        Args:
+            idx: index of the equation in the dataset
+        
+        """
+        eq = load_eq(self.data_path, idx, self.metadata.eqs_per_hdf)
+        dict_costs = return_dict_metadata_dummy_constant(self.metadata)
+        consts = torch.stack([torch.ones([int(self.support.shape[1])])*dict_costs[key] for key in dict_costs.keys()])
         input_lambdi = torch.cat([self.support,consts],axis=0)
         assert input_lambdi.shape[0]  == len(self.metadata.total_coefficients) + len(self.metadata.total_variables)
-        variables = [f"x_{i}" for i in range(1,1+self.support.shape[0])]
-        consts = [c for c in self.metadata.total_coefficients]
-        #symbols = variables + consts
+
+        #Symbolic Checking
+        const, dummy_const = sample_symbolic_constants(eq)
+        eq_str = sympify(eq.expr.format(**dummy_const))
+        if str(eq_str) in self.validation_eqs:
+                return idx, False
+
+        #Numerical Checking        
         args = [ eq.code,input_lambdi ]
         y = evaluate_fun(args)
-        val = tuple(y)
+        #Subtle bug tuple([np.nan]) == tuple([np.nan]) returns true however, tuple([np.nan+0]) == tuple([np.nan]) returns false. 
+        #For avoiding missing numerical equivalences we convert all nan to string
+        curr = [x if not np.isnan(x) else "nan" for x in y] 
+        # y = evaluate_fun(args)
+        val = tuple(curr)
         if val == tuple([]):
             print("Not an equation")
-            return index, False
+            return idx, False
         if val == tuple([float("-inf")]*input_lambdi.shape[-1]):
             print("Found all Inf")
-            return index, False
+            return idx, False
         if val == tuple([float("+inf")]*input_lambdi.shape[-1]):
            print("Found all -Inf")
-           return index, False
+           return idx, False
         if val == tuple([float(0)]*input_lambdi.shape[-1]):
             print("Found all zeros")
-            return index, False
+            return idx, False
         if val == tuple([float("nan")]*input_lambdi.shape[-1]):
             print("Found all nans")
-            return index, False
+            return idx, False
         if val in self.target_image:
             print("Found in validation")
-            return index, False
-        return index, True
+            return idx, False
+        return idx, True
 
         
 

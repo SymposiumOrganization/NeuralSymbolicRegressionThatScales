@@ -5,7 +5,7 @@ import pandas as pd
 from torch.distributions.uniform import Uniform
 from nesymres.dataset.data_utils import create_uniform_support, sample_symbolic_constants, evaluate_fun, return_dict_metadata_dummy_constant
 import warnings
-from sympy import lambdify,sympify, simplify
+from sympy import lambdify,sympify
 import multiprocessing
 import torch
 from tqdm import tqdm
@@ -21,8 +21,12 @@ def evaluate_validation_set(validation_eqs: pd.DataFrame, support) -> list:
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             variables = [f"x_{i}" for i in range(1,1+support.shape[0])]
-            curr = tuple(lambdify(variables,row["eq"])(*support).numpy().astype('float16'))
+            curr = lambdify(variables,row["eq"])(*support).numpy().astype('float16')
+            curr = tuple([x if not np.isnan(x) else "nan" for x in curr])
+            # if row["eq"] == "x_1*cos(x_2**3 + x_2)":
+            #     breakpoint()
             res.append(curr)
+
     return res
 
 
@@ -67,27 +71,21 @@ class Pipeline:
         #consts = [c for c in self.metadata.total_coefficients]
         #symbols = variables + consts
         
-        #Symbol Checking
-        const, dummy_const = sample_symbolic_constants(eq)
-        eq_str = sympify(eq.expr.format(**dummy_const))
-        # if str(eq_str) in self.validation_eqs:
-        #     print(eq_str)
-        #     # print(idx)
+        # #Symbolic Checking
+        # const, dummy_const = sample_symbolic_constants(eq)
+        # eq_str = sympify(eq.expr.format(**dummy_const))
         
-        
-
         args = [ eq.code,input_lambdi ]
         y = evaluate_fun(args)
-        val = tuple(y)
+        curr = [x if not np.isnan(x) else "nan" for x in y]
+        val = tuple(curr)
+
         if val in self.target_image:
             index = self.target_image_l.index(val)
             if not index in self.res:
                 self.res[index] =  self.validation_eqs_l[index]
                 print(len(self.res))
-            
-            # print(eq_str)
-            # print(idx)
-            # breakpoint()
+
         
 
 @click.command()
