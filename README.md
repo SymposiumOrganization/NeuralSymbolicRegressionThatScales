@@ -20,7 +20,7 @@ This library requires python>3.7
 
 
 ## Pretrained models
-We offers two models "10M" and "100M". The first, trained on a dataset of 10M and without constant prediction, is the one used for experiements in our paper. The second is trained on 100M of equations and with constant prediction enabled.
+We offer two models "10M" and "100M". The first, trained on a dataset of 10M and without constant prediction, is the one used for experiements in our paper. The second is trained on 100M of equations and with constant prediction enabled.
 For both models, the equations included in data/tests.csv are held out during training.
 
 If you want to try the models out, look at **jupyter/fit_func.ipynb**.
