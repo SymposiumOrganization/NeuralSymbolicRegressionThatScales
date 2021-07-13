@@ -67,7 +67,7 @@ def main(cfg):
 
 def collect_results(cfg):
     loader = process.file_loader.FileLoader("results.json")
-    df = loader.load_folder(hydra.utils.to_absolute_path("runs/nesymres")).T    
+    df = loader.load_folder(hydra.utils.to_absolute_path("fin_res_v2")).T    
     #f = raw_df.loc[[0,("other","test_path"),("other","name"),("other", "eq"),("other", "benchmark_name") ]]
      
     eqs = list(df.loc[:,[("other", "equation_idx")]].values.reshape(-1))

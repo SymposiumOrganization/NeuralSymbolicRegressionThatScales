@@ -3,29 +3,39 @@ from nesymres import benchmark
 from pathlib import Path
 from functools import partial
 import pandas as pd
-from nesymres.dclasses import Equation
 import time
 import os
 import json
 
 
 
-
 def get_nesymres(cfg):
     from nesymres.architectures import model  
     from nesymres.utils import load_metadata_hdf5
-    from nesymres.dclasses import FitParams
+    from nesymres.dclasses import FitParams,BFGSParams
+
     model = model.Model.load_from_checkpoint(hydra.utils.to_absolute_path(cfg.model.checkpoint_path), cfg=cfg.model.architecture)
     model.eval()
     model.cuda()
     test_data = load_metadata_hdf5(hydra.utils.to_absolute_path(cfg.test_path))
+    bfgs = BFGSParams(
+        activated= cfg.inference.bfgs.activated,
+        n_restarts=cfg.inference.bfgs.n_restarts,
+        add_coefficients_if_not_existing=cfg.inference.bfgs.add_coefficients_if_not_existing,
+        normalization_o=cfg.inference.bfgs.normalization_o,
+        idx_remove=cfg.inference.bfgs.idx_remove,
+        normalization_type=cfg.inference.bfgs.normalization_type,
+        stop_time=cfg.inference.bfgs.stop_time,
+    )
     params_fit = FitParams(word2id=test_data.word2id, 
                             id2word=test_data.id2word, 
                             una_ops=test_data.una_ops, 
                             bin_ops=test_data.bin_ops, 
                             total_variables=list(test_data.total_variables),  
                             total_coefficients=list(test_data.total_coefficients),
-                            rewrite_functions=list(test_data.rewrite_functions)
+                            rewrite_functions=list(test_data.rewrite_functions),
+                            bfgs=bfgs,
+                            beam_size=cfg.inference.beam_size
                             )
     fitfunc = partial(model.fitfunc,cfg_params=params_fit)
     model.fit = fitfunc

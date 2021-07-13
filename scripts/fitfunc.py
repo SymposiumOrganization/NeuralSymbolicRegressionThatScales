@@ -66,6 +66,7 @@ def main(cfg):
             print("Skipping equation because no points are valid")
             continue
         print(f"Testing expressions {eq.expr}")
+        breakpoint()
         output = fitfunc(X.T,y.squeeze()) 
         breakpoint()
         print(f"GT: {eq.expr}")
