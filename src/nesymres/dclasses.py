@@ -51,12 +51,10 @@ class DataModuleParams:
 @dataclass
 class GeneratorDetails:
     max_len: int
-    positive: bool
-    env_name: str
     operators: str
     max_ops: int
-    int_base: int
-    precision: int
+    #int_base: int
+    #precision: int
     rewrite_functions: str
     variables: list
     eos_index: int

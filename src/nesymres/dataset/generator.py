@@ -4,6 +4,7 @@
 #
 
 from logging import getLogger
+from multiprocessing import Value
 import os
 import io
 import re
@@ -118,7 +119,7 @@ class Generator(object):
     def __init__(self, params):
         self.max_ops = params.max_ops
         self.max_len = params.max_len
-        self.positive = params.positive
+        #self.positive = params.positive
 
 
         # parse operators with their weights
@@ -667,15 +668,18 @@ class Generator(object):
         f_prefix = self.sympy_to_prefix(f)
         # skip too long sequences
         if len(f_expr) + 2 > self.max_len:
-            return None, "Sequence longer than max length"
+            raise ValueErrorExpression("Sequence longer than max length")
+            #return None, "Sequence longer than max length"
 
         # skip when the number of operators is too far from expected
         real_nb_ops = sum(1 if op in self.OPERATORS else 0 for op in f_expr)
         if real_nb_ops < nb_ops / 2:
-            return None, "Too many operators"
+            raise ValueErrorExpression("Too many operators")
+            #return None, "Too many operators"
 
         if f == "0" or type(f) == str:
-            return None, "Not a function"
+            raise ValueErrorExpression("Not a function")
+            #return None, "Not a function"
         
         sy = f.free_symbols
         variables = set(map(str, sy)) - set(self.placeholders.keys())

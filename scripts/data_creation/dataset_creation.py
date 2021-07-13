@@ -110,7 +110,7 @@ def creator(number_of_equations,eq_per_block, debug):
     cpus_available = multiprocessing.cpu_count()
     eq_per_block= min(total_number//cpus_available, int(eq_per_block))
     warnings.filterwarnings("error")
-    env, param, config_dict = create_env("config.json")
+    env, param, config_dict = create_env("dataset_configuration.json")
     if not debug:
         folder_path = Path(f"data/raw_datasets/{number_of_equations}") 
     else:
