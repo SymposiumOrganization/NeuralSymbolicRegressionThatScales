@@ -30,6 +30,19 @@ If you want to try the models out, look at **jupyter/fit_func.ipynb**.
 Before training, you need a dataset of equations. Here the steps to follow
 
 ### Raw training dataset generation
+The equation generator scripts are based on [https://github.com/facebookresearch/SymbolicMathematics]
+First, if you want to change the defaults value, configure the dataset_configuration.json file:
+```
+{
+    "max_len": 20, #Maximum length of an equation
+    "operators": "add:10,mul:10,sub:5,div:5,sqrt:4,pow2:4,pow3:2,pow4:1,pow5:1,ln:4,exp:4,sin:4,cos:4,tan:4,asin:2", #Operator unnormalized probability
+    "max_ops": 5, #Maximum number of operations
+    "rewrite_functions": "", #Not used, leave it empty
+    "variables": ["x_1","x_2","x_3"], #Variable names, if you want to add more add follow the convention i.e. x_4, x_5,... and so on
+    "eos_index": 1,
+    "pad_index": 0
+}
+```
 There are two ways to generate this dataset:
 
 * If you are running on linux, you use makefile in terminal as follows:
@@ -50,7 +63,7 @@ make data/raw_datasets/10M: #Launch make file command
 python3 scripts/data_creation/dataset_creation.py --number_of_equations NumberOfEquations --no-debug #Replace NumberOfEquations with the number of equations you want to generate
 ```
 
-After this command you will have a folder named **data/raw_data/NumberOfEquations** containing .h5 files. By default, each of this h5 files contains a maximum of 5e4 equations. The equation generator scripts are based on [https://github.com/facebookresearch/SymbolicMathematics]
+After this command you will have a folder named **data/raw_data/NumberOfEquations** containing .h5 files. By default, each of this h5 files contains a maximum of 5e4 equations. 
 
 
 ### Raw test dataset generation
