@@ -30,7 +30,7 @@ If you want to try the models out, look at **jupyter/fit_func.ipynb**.
 Before training, you need a dataset of equations. Here the steps to follow
 
 ### Raw training dataset generation
-The equation generator scripts are based on [[SymbolicMathematics]https://github.com/facebookresearch/SymbolicMathematics]
+The equation generator scripts are based on [[SymbolicMathematics](https://github.com/facebookresearch/SymbolicMathematics)]
 First, if you want to change the defaults value, configure the dataset_configuration.json file:
 ```
 {
