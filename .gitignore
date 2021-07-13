@@ -6,8 +6,11 @@ lightning_logs/*
 Exp_weights/*
 wandb/*
 *.log
-outputs/*
 runs/*
+jupyter/.ipynb_checkpoints/
 run/*
-weights/*
 old/*
+weights/*
+test_set/test_nc.csv
+test_set/test_wc.csv
+requirements.txt
