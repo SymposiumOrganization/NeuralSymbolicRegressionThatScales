@@ -20,7 +20,7 @@ This library requires python>3.7
 
 
 ## Pretrained models
-We offer two models "10M" and "100M". The first, trained on a dataset of 10M and without constant prediction, is the one used for experiements in our paper. The second is trained on 100M of equations and with constant prediction enabled.
+We offer two models "10M" and "100M". The first, trained on a dataset of 10M and without constant prediction, is the one used for experiements in our paper. The second is trained on 100M [[Link](https://drive.google.com/drive/folders/1LTKUX-KhoUbW-WOx-ZJ8KitxK7Nov41G?usp=sharing)] of equations and with constant prediction enabled.
 For both models, the equations included in data/tests.csv are held out during training.
 
 If you want to try the models out, look at **jupyter/fit_func.ipynb**.
@@ -30,7 +30,7 @@ If you want to try the models out, look at **jupyter/fit_func.ipynb**.
 Before training, you need a dataset of equations. Here the steps to follow
 
 ### Raw training dataset generation
-The equation generator scripts are based on [https://github.com/facebookresearch/SymbolicMathematics]
+The equation generator scripts are based on [[SymbolicMathematics](https://github.com/facebookresearch/SymbolicMathematics)]
 First, if you want to change the defaults value, configure the dataset_configuration.json file:
 ```
 {
