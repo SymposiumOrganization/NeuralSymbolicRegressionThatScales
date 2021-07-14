@@ -13,4 +13,5 @@ old/*
 weights/*
 test_set/test_nc.csv
 test_set/test_wc.csv
+outputs/*
 requirements.txt
