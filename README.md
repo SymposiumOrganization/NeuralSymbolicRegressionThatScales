@@ -12,7 +12,7 @@ Please clone and install this repository via
 ```
 git clone https://github.com/SymposiumOrganization/NeuralSymbolicRegressionThatScales.git
 cd NeuralSymbolicRegressionThatScales/
-pip3 install . -e
+pip3 install -e .
 ```
 
 This library requires python>3.7
