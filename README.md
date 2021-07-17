@@ -1,7 +1,7 @@
 # NeuralSymbolicRegressionThatScales
 ## The repo documentation is currently under development, please check back soon for more information.
 
-Pytorch implementation and pretrained models for the paper "Neural Symbolic Regression That Scales" 
+Pytorch implementation and pretrained models for the paper "Neural Symbolic Regression That Scales", presented at ICML 2021. 
 For details, see **Neural Symbolic Regression That Scales**.  
 [[`arXiv`](https://arxiv.org/pdf/2106.06427.pdf)] 
 
@@ -20,7 +20,7 @@ This library requires python>3.7
 
 
 ## Pretrained models
-We offer two models "10M" and "100M". The first, trained on a dataset of 10M and without constant prediction, is the one used for experiements in our paper. The second is trained on 100M [[Link](https://drive.google.com/drive/folders/1LTKUX-KhoUbW-WOx-ZJ8KitxK7Nov41G?usp=sharing)] of equations and with constant prediction enabled.
+We offer two models "10M" and "100M". The first, trained on a dataset of 10M and without constant placeholder prediction, is the one used for experiements in our paper. The second is trained on 100M [[Link](https://drive.google.com/drive/folders/1LTKUX-KhoUbW-WOx-ZJ8KitxK7Nov41G?usp=sharing)] of equations and with constant placeholder prediction enabled.
 For both models, the equations included in data/benchmark/tests.csv are held out during training.
 
 If you want to try the models out, look at **jupyter/fit_func.ipynb**.
