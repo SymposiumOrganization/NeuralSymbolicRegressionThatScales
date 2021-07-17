@@ -22,7 +22,7 @@ This library requires python>3.7
 We offer two models "10M" and "100M". The first, trained on a dataset of 10M and without constant placeholder prediction, is the one used for experiements in our paper. The second is trained on 100M [[Link](https://drive.google.com/drive/folders/1LTKUX-KhoUbW-WOx-ZJ8KitxK7Nov41G?usp=sharing)] of equations and with constant placeholder prediction enabled.
 For both models, the equations included in data/benchmark/tests.csv are held out during training.
 
-If you want to try the models out, look at **jupyter/fit_func.ipynb**.
+If you want to try the models out, look at **jupyter/fit_func.ipynb**. Before running the notebook, make sure to first create a folder named "weights" and to download the provided checkpoints there.
 
 
 ## Dataset Generation
