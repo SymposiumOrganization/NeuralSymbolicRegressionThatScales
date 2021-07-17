@@ -2,8 +2,7 @@
 ## The repo documentation is currently under development, please check back soon for more information.
 
 Pytorch implementation and pretrained models for the paper "Neural Symbolic Regression That Scales", presented at ICML 2021. 
-For details, see **Neural Symbolic Regression That Scales**.  
-[[`arXiv`](https://arxiv.org/pdf/2106.06427.pdf)] 
+For details, see **Neural Symbolic Regression That Scales**.  [[`arXiv`](https://arxiv.org/pdf/2106.06427.pdf)] 
 
 
 ## Installation
