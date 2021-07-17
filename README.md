@@ -19,8 +19,10 @@ This library requires python>3.7
 
 
 ## Pretrained models
-We offer two models "10M" and "100M". The first, trained on a dataset of 10M and without constant placeholder prediction, is the one used for experiements in our paper. The second is trained on 100M [[Link](https://drive.google.com/drive/folders/1LTKUX-KhoUbW-WOx-ZJ8KitxK7Nov41G?usp=sharing)] of equations and with constant placeholder prediction enabled.
-For the first model, the equations included in data/benchmark/tests.csv are held out during training.
+We offer two models, "10M" and "100M".  Both are trained with parameter configuration showed in **dataset_configuration.json** (which contains details about how datasets are created) and **scripts/config.yaml** (which contains details of how models are trained). "10M" model is trained with 10 million datasets and "100M" model is trained with 100 millions dataset.
+
+* Link to 100M: [[Link](https://drive.google.com/drive/folders/1LTKUX-KhoUbW-WOx-ZJ8KitxK7Nov41G?usp=sharing)]
+* Link to 10M: [[Link](https://drive.google.com/file/d/1cNZq3dLnSUKEm-ujDl2mb2cCCorv7kOC/view?usp=sharing)]
 
 If you want to try the models out, look at **jupyter/fit_func.ipynb**. Before running the notebook, make sure to first create a folder named "weights" and to download the provided checkpoints there.
 
