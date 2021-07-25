@@ -95,4 +95,10 @@ Once you have created your training and validation datasets run
 ```
 python3 scripts/train.py
 ```
-You can configure the config.yaml with the necessary options
+You can configure the config.yaml with the necessary options. Most important, make sure you have set 
+train_path and val_path correctly. If you have followed the 100K example this should be set as:
+```
+train_path:  data/datasets/100000
+val_path: data/raw_datasets/150
+```
+
