@@ -83,7 +83,7 @@ This command will create two csv files named test_nc.csv (equations without cons
 ### Remove test and numerical problematic equations from the training dataset 
 
 ```
-python3 scripts/data_creation/filter_from_already_existing.py --data_path data/raw_datasets/${NUM} --csv_path pathToValidate equations #You can leave csv_path empty if you want to create a validation set
+python3 scripts/data_creation/filter_from_already_existing.py --data_path data/raw_datasets/${NUM} --csv_path pathToValidateequations #You can leave csv_path empty if you do not want to create a validation set
 python3 scripts/data_creation/filter_validation.py --val_path data/datasets/${NUM}/${NUM}_val
 python3 scripts/data_creation/to_h5.py --folder_dataset data/datasets/${NUM} 
 ```
