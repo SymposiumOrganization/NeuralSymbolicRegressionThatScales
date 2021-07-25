@@ -88,7 +88,7 @@ The following steps will remove the validation equations from the training set a
 python3 scripts/data_creation/filter_from_already_existing.py --data_path path_to_data_folder --csv_path path_to_csv #You can leave csv_path empty if you do not want to create a validation set
 python3 scripts/data_creation/apply_filtering.py --data_path path_to_data_folder 
 ```
-
+You should now have a folder named data/datasets/100000. This will be the training folder.
 
 ## Training
 Once you have created your training and validation datasets run 
