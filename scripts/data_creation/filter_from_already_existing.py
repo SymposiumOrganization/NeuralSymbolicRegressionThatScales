@@ -58,7 +58,7 @@ class Pipeline:
         const, dummy_const = sample_symbolic_constants(eq)
         eq_str = sympify(eq.expr.format(**dummy_const))
         if str(eq_str) in self.validation_eqs:
-            print("Skeleton in validation set")
+            # Skeleton in val
             return idx, False
 
         #Numerical Checking        
@@ -71,22 +71,22 @@ class Pipeline:
         # y = evaluate_fun(args)
         val = tuple(curr)
         if val == tuple([]):
-            print("Not an equation")
+            # Not an equation
             return idx, False
         if val == tuple([float("-inf")]*input_lambdi.shape[-1]):
-            print("Found all Inf")
+            # All Inf
             return idx, False
         if val == tuple([float("+inf")]*input_lambdi.shape[-1]):
-           print("Found all -Inf")
+            # All -inf 
            return idx, False
         if val == tuple([float(0)]*input_lambdi.shape[-1]):
-            print("Found all zeros")
+            # All zeros
             return idx, False
         if val == tuple(["nan"]*input_lambdi.shape[-1]):
-            print("Found all nans")
+            # All nans
             return idx, False
         if val in self.target_image:
-            print("Numerically identical equation in validation")
+            # Numerically identical to val
             return idx, False
         return idx, True
 
@@ -118,6 +118,8 @@ def main(data_path,csv_path,debug):
                     res.append(evaled)
     else:
         res = list(map(pipe.is_valid_and_not_in_validation_set, tqdm(range(total_eq))))
+    
+    print(f"Total number of good equations {len(res)}")
     np.save(os.path.join(data_path,"filtered"),res)
 
 if __name__=="__main__":
