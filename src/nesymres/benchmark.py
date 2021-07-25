@@ -199,7 +199,9 @@ def evaluate_func(func_str, vars_list, X):
     # Pad X with zero-columns, allowing for variables to appear in the equation
     # that are not in the ground-truth equation
     X_padded = np.zeros((X.shape[0], len(vars_list)))
-    X_padded[:, :X.shape[1]] = X
+
+    
+    X_padded[:, :X.shape[1]] = X[:,:X_padded.shape[1]]
     # Subselect columns of X that corrspond to provided variables
     X_subsel = X_padded[:, indeces]
 

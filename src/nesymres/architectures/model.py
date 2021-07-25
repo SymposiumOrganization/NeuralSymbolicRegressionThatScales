@@ -134,9 +134,9 @@ class Model(pl.LightningModule):
         y = y[:,None]
         
         X = torch.tensor(X,device=self.device).unsqueeze(0)
-        if X.shape[1] < self.cfg.dim_input - 1:
-            pad = torch.zeros(1,self.cfg.dim_input-X.shape[1]-1, X.shape[2], device=self.device)
-            X = torch.cat((X,pad),dim=1)
+        if X.shape[2] < self.cfg.dim_input - 1:
+            pad = torch.zeros(1, X.shape[1],self.cfg.dim_input-X.shape[2]-1, device=self.device)
+            X = torch.cat((X,pad),dim=2)
         y = torch.tensor(y,device=self.device).unsqueeze(0)
         with torch.no_grad():
 
@@ -292,7 +292,7 @@ class Model(pl.LightningModule):
             P_bfgs = []
             #counter = 1
 
-            fun_args = ",".join(chain(cfg_params.total_variables,"constant"))
+            #fun_args = ",".join(chain(cfg_params.total_variables,"constant"))
             cfg_params.id2word[3] = "constant"
             for __, ww in sorted(
                 generated_hyps.hyp, key=lambda x: x[0], reverse=True

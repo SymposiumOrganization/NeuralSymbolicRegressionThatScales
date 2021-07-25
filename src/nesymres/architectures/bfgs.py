@@ -158,11 +158,9 @@ def bfgs(pred_str, X, y, cfg):
         
         values = {x:X[:,:,idx].cpu() for idx, x in enumerate(cfg.total_variables)} #CHECK ME
         y_found = sp.lambdify(",".join(cfg.total_variables), final)(**values)
-        final_loss = np.mean(np.square(y_found.squeeze()-y.cpu()).numpy())
+        final_loss = np.mean(np.square(y_found-y.cpu()).numpy())
         F_loss.append(final_loss)
-         #early stopping
-        # if final_loss < 1e-8:
-        #     return (final, fun_timed.x,final_loss,example)
+
     try:
         k_best = np.nanargmin(F_loss)
     except ValueError:

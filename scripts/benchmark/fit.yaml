@@ -3,8 +3,8 @@ defaults:
 
 test_path: data/validation
 name: results
-benchmark_path: data/benchmark/nc_old.csv
-equation_idx: 2
+benchmark_path: test_set/nc.csv
+equation_idx: 0
 
 hydra:
   sweep:

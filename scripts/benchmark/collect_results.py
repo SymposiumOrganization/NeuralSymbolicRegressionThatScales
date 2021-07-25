@@ -15,9 +15,6 @@ import hydra
 from csem_exptrack import process, utils
 import json
 from nesymres import benchmark
-#from misc_utils.misc_utils import get_combined_df, get_root_dirs, reroute_path
-#from utils import get_variables, evaluate_func
-
 
 
 def parse_args():
@@ -67,7 +64,7 @@ def main(cfg):
 
 def collect_results(cfg):
     loader = process.file_loader.FileLoader("results.json")
-    df = loader.load_folder(hydra.utils.to_absolute_path("runs/nesymres")).T    
+    df = loader.load_folder(hydra.utils.to_absolute_path("fin_res_v2")).T    
     #f = raw_df.loc[[0,("other","test_path"),("other","name"),("other", "eq"),("other", "benchmark_name") ]]
      
     eqs = list(df.loc[:,[("other", "equation_idx")]].values.reshape(-1))
@@ -79,12 +76,6 @@ def collect_results(cfg):
             res.append(json_data)
     best_eq = [x["equation"][0] if x["equation"] else None for x in res]
     duration = [x["duration"] for x in res]
-    # columns = {x:[None]*len(eqs) for x in ['duration', 'equation', 'model_path',  
-    #                     'P', 'P_bfgs', 'regularized_losses', 'equation_lengths_bfgs', 
-    #                     'hypothesis_scores_bfgs', 'run_key', 'output_dir', 'benchmark_path', 
-    #                     'equation_idx', 'num_eval_points', 'model_name',  
-    #                     'nesymres_checkpoint_path', 'nesymres_beam_size', 'nesymres_bfgs', 'nesymres_bfgs_n_restarts', 
-    #                     'nesymres_complexity_reg_coef']}
     df.loc[:,"pred_eq"] = best_eq
     df.loc[:,"duration"] = duration
     df.index = eqs
