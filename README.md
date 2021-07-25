@@ -81,6 +81,7 @@ To do so, run: `python3 scripts/csv_handling/dataload_format_to_csv.py raw_test_
 This command will create two csv files named test_nc.csv (equations without constants) and test_wc.csv (equation with constants) in the test_set folder.
 
 ### Remove test and numerical problematic equations from the training dataset 
+The following steps will remove the validation equations from the training set and remove equations that are always nan, inf, etc.
 
 ```
 python3 scripts/data_creation/filter_from_already_existing.py --data_path data/raw_datasets/${NUM} --csv_path pathToValidateequations #You can leave csv_path empty if you do not want to create a validation set
