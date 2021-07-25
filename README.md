@@ -73,7 +73,7 @@ hence this validation dataset should be **small**. For our paper it constisted o
 
 ```
 #Code for generating a 150 equation dataset 
-python3 scripts/data_creation/dataset_creation.py --number_of_equations 150 --no-debug 
+python3 scripts/data_creation/dataset_creation.py --number_of_equations 150 --no-debug #This code creates a new folder data/raw_datasets/150
 ```
 
 Now you convert the newly created validation dataset in the csv format. First in **scripts/config.yaml** replace the entry of *raw_test_path* with the path to your test set. For instance if you have created a dataset equations it would be **data/raw_datasets/150**) then run: `python3 scripts/csv_handling/dataload_format_to_csv.py`
