@@ -82,9 +82,10 @@ This command will create two csv files named test_nc.csv (equations without cons
 
 ### Remove test and numerical problematic equations from the training dataset 
 The following steps will remove the validation equations from the training set and remove equations that are always nan, inf, etc.
-
+path_to_data_folder would be data/raw_datasets/100000  if you have created a 100K dataset
+path_to_csv would be benchmark/csv/150_nc if you have created 150 equations for validation
 ```
-python3 scripts/data_creation/filter_from_already_existing.py --data_path data/raw_datasets/${NUM} --csv_path pathToValidateequations #You can leave csv_path empty if you do not want to create a validation set
+python3 scripts/data_creation/filter_from_already_existing.py --data_path path_to_data_folder --csv_path path_to_csv #You can leave csv_path empty if you do not want to create a validation set
 python3 scripts/data_creation/filter_validation.py --val_path data/datasets/${NUM}/${NUM}_val
 python3 scripts/data_creation/to_h5.py --folder_dataset data/datasets/${NUM} 
 ```
