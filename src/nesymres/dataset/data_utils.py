@@ -138,7 +138,7 @@ def sample_symbolic_constants(eq: Equation, cfg=None) -> Tuple:
             if si[:2] == "ca":
                 consts[si] = round(float(Uniform(cfg.additive.min, cfg.additive.max).sample()),3)
             elif si[:2] == "cm":
-                consts[si] = round(float(Uniform(cfg.additive.min, cfg.additive.max).sample()),3)
+                consts[si] = round(float(Uniform(cfg.multiplicative.min, cfg.multiplicative.max).sample()),3)
             else:
                 raise KeyError
     else:

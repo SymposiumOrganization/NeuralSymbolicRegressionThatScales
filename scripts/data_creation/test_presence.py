@@ -60,6 +60,7 @@ class Pipeline:
         """
         eq = load_eq(self.data_path, idx, self.metadata.eqs_per_hdf)
         dict_costs = return_dict_metadata_dummy_constant(self.metadata)
+        #dict_costs["cm_0"] = -1
         #const, dummy_const = sample_symbolic_constants(eq)
         consts = torch.stack([torch.ones([int(self.support.shape[1])])*dict_costs[key] for key in dict_costs.keys()])
 
@@ -72,8 +73,11 @@ class Pipeline:
         #symbols = variables + consts
         
         # #Symbolic Checking
-        # const, dummy_const = sample_symbolic_constants(eq)
-        # eq_str = sympify(eq.expr.format(**dummy_const))
+        const, dummy_const = sample_symbolic_constants(eq)
+        eq_str = sympify(eq.expr.format(**dummy_const))
+        if str(eq_str) in self.validation_eqs:
+            print("EQUATION IN VAL")
+
         
         args = [ eq.code,input_lambdi ]
         y = evaluate_fun(args)
@@ -82,6 +86,7 @@ class Pipeline:
 
         if val in self.target_image:
             index = self.target_image_l.index(val)
+            print("EQUATION IN VAL")
             if not index in self.res:
                 self.res[index] =  self.validation_eqs_l[index]
                 print(len(self.res))

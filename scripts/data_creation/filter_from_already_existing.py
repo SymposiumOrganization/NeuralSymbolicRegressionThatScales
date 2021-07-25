@@ -25,16 +25,20 @@ def evaluate_validation_set(validation_eqs: pd.DataFrame, support) -> set:
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             variables = [f"x_{i}" for i in range(1,1+support.shape[0])]
-            curr = tuple(lambdify(variables,row["eq"])(*support).numpy().astype('float16'))
+            curr = lambdify(variables,row["eq"])(*support).numpy().astype('float16')
+            curr = tuple([x if not np.isnan(x) else "nan" for x in curr])
             res.add(curr)
     return res
 
 class Pipeline:
-    def __init__(self, data_path, metadata, support, target_image):
+    def __init__(self, data_path, metadata, support, target_image: list, validation_eqs: set):
         self.data_path = data_path
         self.metadata = metadata
         self.support = support
-        self.target_image = target_image
+        self.target_image_l = target_image
+        self.target_image = set(target_image)
+        self.validation_eqs_l = validation_eqs
+        self.validation_eqs = set(validation_eqs)
 
     def is_valid_and_not_in_validation_set(self, idx:int) -> bool:
         """
@@ -54,11 +58,13 @@ class Pipeline:
         const, dummy_const = sample_symbolic_constants(eq)
         eq_str = sympify(eq.expr.format(**dummy_const))
         if str(eq_str) in self.validation_eqs:
-                return idx, False
+            print("Skeleton in validation set")
+            return idx, False
 
         #Numerical Checking        
         args = [ eq.code,input_lambdi ]
         y = evaluate_fun(args)
+        
         #Subtle bug tuple([np.nan]) == tuple([np.nan]) returns true however, tuple([np.nan+0]) == tuple([np.nan]) returns false. 
         #For avoiding missing numerical equivalences we convert all nan to string
         curr = [x if not np.isnan(x) else "nan" for x in y] 
@@ -76,11 +82,11 @@ class Pipeline:
         if val == tuple([float(0)]*input_lambdi.shape[-1]):
             print("Found all zeros")
             return idx, False
-        if val == tuple([float("nan")]*input_lambdi.shape[-1]):
+        if val == tuple(["nan"]*input_lambdi.shape[-1]):
             print("Found all nans")
             return idx, False
         if val in self.target_image:
-            print("Found in validation")
+            print("Numerically identical equation in validation")
             return idx, False
         return idx, True
 
@@ -100,7 +106,7 @@ def main(data_path,csv_path,debug):
     support = create_uniform_support(sampling_distribution, len(metatada.total_variables), num_p)
     print("Creating image for validation set")
     target_image = evaluate_validation_set(validation,support)
-    pipe = Pipeline(data_path, metatada, support, target_image)
+    pipe = Pipeline(data_path, metatada, support, target_image, list(validation["eq"]))
     print("Starting finding out index of equations present in the validation set or wih numerical problems")
     total_eq = int(metatada.total_number_of_eqs)
     res = []

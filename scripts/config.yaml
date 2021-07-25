@@ -1,4 +1,4 @@
-train_path: data/dataset/100000000
+train_path: data/datasets/10000000
 val_path: data/validation
 
 raw_test_path: data/raw_datasets/150
@@ -9,8 +9,9 @@ wandb: True
 num_of_workers: 28
 batch_size: 25
 epochs: 20
-val_check_interval: 0.02
+val_check_interval: 1.0
 precision: 16
+gpu: 8
 
 dataset_train:
   total_variables: #Do not fill
@@ -27,8 +28,8 @@ dataset_train:
       max: 2
       min: -2
     multiplicative:
-      max: 5
-      min: 0.1
+      max: 2
+      min: -2
 
 dataset_val:
   total_variables: #Do not fill
