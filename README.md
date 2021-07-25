@@ -86,11 +86,8 @@ The following steps will remove the validation equations from the training set a
 * `path_to_csv=test_set/test_nc.csv` if you have created 150 equations for validation. If you want to use the one in the paper replace it with `nc.csv`
 ```
 python3 scripts/data_creation/filter_from_already_existing.py --data_path path_to_data_folder --csv_path path_to_csv #You can leave csv_path empty if you do not want to create a validation set
-python3 scripts/data_creation/filter_validation.py --val_path data/datasets/${NUM}/${NUM}_val
-python3 scripts/data_creation/to_h5.py --folder_dataset data/datasets/${NUM} 
+python3 scripts/data_creation/apply_filtering.py --data_path path_to_data_folder 
 ```
-
-
 
 
 ## Training
