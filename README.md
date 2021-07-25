@@ -76,9 +76,9 @@ hence this validation dataset should be **small**. For our paper it constisted o
 python3 scripts/data_creation/dataset_creation.py --number_of_equations 150 --no-debug #This code creates a new folder data/raw_datasets/150
 ```
 
-Now you convert the newly created validation dataset in the csv format. First in **scripts/config.yaml** replace the entry of *raw_test_path* with the path to your test set. For instance if you have created a dataset equations it would be **data/raw_datasets/150**) then run: `python3 scripts/csv_handling/dataload_format_to_csv.py`
-
-This command will create csv file named test.csv in the test_set folder.
+If you want, you can convert the newly created validation dataset in a csv format. 
+To do so, run: `python3 scripts/csv_handling/dataload_format_to_csv.py raw_test_path=data/raw_datasets/150`
+This command will create two csv files named test_nc.csv (equations without constants) and test_wc.csv (equation with constants) in the test_set folder.
 
 ### Remove test and numerical problematic equations from the training dataset 
 
