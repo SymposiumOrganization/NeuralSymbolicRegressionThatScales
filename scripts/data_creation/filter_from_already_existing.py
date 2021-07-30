@@ -100,7 +100,11 @@ def main(data_path,csv_path,debug):
     print("Loading metadata")
     metatada = load_metadata_hdf5(data_path)
     #data = load_dataset(data_path)
-    validation = pd.read_csv(csv_path)
+    if csv_path == "None":
+        validation = pd.DataFrame(columns=["eq"])
+    else:
+        
+        validation = pd.read_csv(csv_path)
     sampling_distribution = Uniform(-25,25)
     num_p = 400
     support = create_uniform_support(sampling_distribution, len(metatada.total_variables), num_p)
