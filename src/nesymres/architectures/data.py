@@ -222,7 +222,7 @@ def evaluate_and_wrap(eqs: List[Equation], cfg):
     )
     num_fil_nan_big = num_fil_nan[cond2]
     tokens_eqs = tokens_eqs[cond2]
-    idx = torch.argsort(num_fil_nan_big[:, 3, :]).unsqueeze(1).repeat(1, 4, 1)
+    idx = torch.argsort(num_fil_nan_big[:, -1, :]).unsqueeze(1).repeat(1, num_fil_nan_big.shape[1], 1)
     res = torch.gather(num_fil_nan_big, 2, idx)
     # res, _ = torch.sort(num_fil_nan_big)
     res = res[:, :, torch.sum(torch.count_nonzero(torch.isnan(res), dim=1), dim=0) == 0]
