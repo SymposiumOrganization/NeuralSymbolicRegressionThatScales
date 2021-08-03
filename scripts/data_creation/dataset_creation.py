@@ -20,6 +20,7 @@ import types
 from itertools import chain
 import traceback
 import h5py
+import warnings
 
 
 class Pipepile:
@@ -68,6 +69,17 @@ class Pipepile:
                 continue
             except generator.ImAccomulationBounds:
                 signal.alarm(0)
+                continue
+            except RecursionError:
+                #Due to Sympy 
+                signal.alarm(0)
+                continue
+            except KeyError:
+                signal.alarm(0)
+                continue
+            except TypeError:
+                signal.alarm(0)
+            except Exception as E:
                 continue
 
         

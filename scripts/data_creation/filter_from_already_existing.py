@@ -123,7 +123,7 @@ def main(data_path,csv_path,debug):
     else:
         res = list(map(pipe.is_valid_and_not_in_validation_set, tqdm(range(total_eq))))
     
-    print(f"Total number of good equations {len(res)}")
+    print(f"Total number of good equations {len([x for x in p if x[1]])}")
     np.save(os.path.join(data_path,"filtered"),res)
 
 if __name__=="__main__":
