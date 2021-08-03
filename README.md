@@ -2,6 +2,7 @@
 
 Pytorch implementation and pretrained models for the paper "Neural Symbolic Regression That Scales", presented at ICML 2021. 
 Our deep-learning based approach is the first symbolic regression method that leverages large scale pre-training. We procedurally generate an unbounded set of equations, and simultaneously pre-train a Transformer to predict the symbolic equation from a corresponding set of input-output-pairs. 
+
 For details, see **Neural Symbolic Regression That Scales**.  [[`arXiv`](https://arxiv.org/pdf/2106.06427.pdf)] 
 
 
