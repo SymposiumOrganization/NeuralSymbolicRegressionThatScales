@@ -60,5 +60,5 @@ def main(cfg):
 
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0" #,1,2,3,4,5,6,7"  # ,1,2,4,5,6,7" Change Me
+    os.environ["CUDA_VISIBLE_DEVICES"] = "7" #,1,2,3,4,5,6,7"  # ,1,2,4,5,6,7" Change Me
     main()

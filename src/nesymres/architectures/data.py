@@ -63,31 +63,38 @@ class NesymresDataset(data.Dataset):
         
 
     def __getitem__(self, index):
-        eq = load_eq(self.data_path, index, self.eqs_per_hdf)
-        code = types.FunctionType(eq.code, globals=globals(), name="f")
-        consts, initial_consts = sample_symbolic_constants(eq, self.cfg.constants)
-        if self.cfg.predict_c:
-            eq_string = eq.expr.format(**consts)
-        else:
-            eq_string = eq.expr.format(**initial_consts)
 
-        
-        try:
-            eq_sympy_infix = constants_to_placeholder(eq_string)
-            eq_sympy_prefix = Generator.sympy_to_prefix(eq_sympy_infix)
-        except UnknownSymPyOperator as e:
-            print(e)
-            return Equation(code=code,expr=[],coeff_dict=consts,variables=eq.variables,support=eq.support, valid=False)
-        except RecursionError as e:
-            print(e)
-            return Equation(code=code,expr=[],coeff_dict=consts,variables=eq.variables,support=eq.support, valid=False)
+        while True:
+            eq = load_eq(self.data_path, index, self.eqs_per_hdf)
+            code = types.FunctionType(eq.code, globals=globals(), name="f")
+            consts, initial_consts = sample_symbolic_constants(eq, self.cfg.constants)
+            if self.cfg.predict_c:
+                eq_string = eq.expr.format(**consts)
+            else:
+                eq_string = eq.expr.format(**initial_consts)
 
-        try:
-            t = tokenize(eq_sympy_prefix,self.word2id)
-            curr = Equation(code=code,expr=eq_sympy_infix,coeff_dict=consts,variables=eq.variables,support=eq.support, tokenized=t, valid=True)
-        except:
-            t = []
-            curr = Equation(code=code,expr=eq_sympy_infix,coeff_dict=consts,variables=eq.variables,support=eq.support, valid=False)
+            
+            try:
+                eq_sympy_infix = constants_to_placeholder(eq_string)
+                eq_sympy_prefix = Generator.sympy_to_prefix(eq_sympy_infix)
+            except UnknownSymPyOperator as e:
+                print(e)
+                return Equation(code=code,expr=[],coeff_dict=consts,variables=eq.variables,support=eq.support, valid=False)
+            except RecursionError as e:
+                print(e)
+                return Equation(code=code,expr=[],coeff_dict=consts,variables=eq.variables,support=eq.support, valid=False)
+
+            try:
+                t = tokenize(eq_sympy_prefix,self.word2id)
+                curr = Equation(code=code,expr=eq_sympy_infix,coeff_dict=consts,variables=eq.variables,support=eq.support, tokenized=t, valid=True)
+                break
+            except:
+                t = []
+                curr = Equation(code=code,expr=eq_sympy_infix,coeff_dict=consts,variables=eq.variables,support=eq.support, valid=False)
+            if self.mode != "train":
+                break
+            else:
+                index = index + 1
 
         return curr
 
