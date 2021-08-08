@@ -7,6 +7,6 @@ setuptools.setup(
       packages=setuptools.find_packages('.'),
       package_dir={'': '.'},
       install_requires=[
-          'numpy','sympy', 'pandas','click', 'tqdm','numexpr','jsons', "h5py","scipy","dataclass_dict_convert", "hydra-core", "ordered_set", "wandb"
+          'numpy','sympy', 'pandas','click', 'tqdm','numexpr','jsons', "h5py","scipy","dataclass_dict_convert", "hydra-core==1.0.0", "ordered_set", "wandb"
       ]
      )
