@@ -22,7 +22,7 @@ This library requires python>3.7
 ## Pretrained models
 We offer two models, "10M" and "100M".  Both are trained with parameter configuration showed in **dataset_configuration.json** (which contains details about how datasets are created) and **scripts/config.yaml** (which contains details of how models are trained). "10M" model is trained with 10 million datasets and "100M" model is trained with 100 millions dataset.
 
-***Updated***
+***Updated***:
 The weights can be found here: https://huggingface.co/TommasoBendinelli/NeuralSymbolicRegressionThatScales/tree/main
 
 If you want to try the models out, look at **jupyter/fit_func.ipynb**. Before running the notebook, make sure to first create a folder named "weights" and to download the provided checkpoints there.
